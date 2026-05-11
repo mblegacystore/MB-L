@@ -1,0 +1,107 @@
+// 💰-transaksi.js – Urus pembayaran
+async function onIncompletePaymentFound(payment) {
+    updateStatus("⏳ Menyelesaikan pembayaran tertunda...");
+    pendingIncompleteCount++;
+    try {
+        let res = await fetch("/api/cuci.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId: payment.identifier })
+        });
+        let data = await res.json();
+        pendingIncompleteCount--;
+        if (data.success) {
+            updateStatus("✅ Selesai");
+            tryEnablePaymentButtons();
+            return { status: "COMPLETED" };
+        }
+        updateStatus("⚠️ Dibersihkan");
+        tryEnablePaymentButtons();
+        return { status: "CANCELLED" };
+    } catch (e) {
+        pendingIncompleteCount--;
+        updateStatus("⚠️ Dibersihkan");
+        tryEnablePaymentButtons();
+        return { status: "CANCELLED" };
+    }
+}
+
+function buyProduct(key, amount) {
+    let total = parseFloat(amount).toFixed(7);
+    updateStatus("💰 Membayar " + total + " Pi...");
+    Pi.createPayment(
+        { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
+        {
+            onIncompletePaymentFound: onIncompletePaymentFound,
+            onReadyForServerApproval: function(id) {
+                fetch("/api/bayar-sah.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id })
+                });
+            },
+            onReadyForServerCompletion: function(id, txid) {
+                fetch("/api/bayar-selesai.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id, txid: txid })
+                }).then(function() {
+                    updateStatus("✅ Berjaya!");
+                    if (key === "echelon") {
+                        currentUser.boughtEchelon = true;
+                        showEchelonReport();
+                    }
+                    if (key === "command") {
+                        showLockedContent("command");
+                    }
+                }).catch(async function() {
+                    await fetch("/api/cuci.js", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentId: id, txid: txid })
+                    });
+                    updateStatus("✅ Pulih!");
+                });
+            },
+            onCancel: function() { updateStatus("❌ Dibatalkan"); },
+            onError: function(e) { updateStatus("❌ Ralat: " + e.message); }
+        }
+    );
+}
+
+async function requestPayout() {
+    if (!currentUser) return;
+    let wallet = currentUser.wallet_address || null;
+    updateStatus("💸 Mencipta A2U...");
+    Pi.createPayment(
+        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
+        {
+            onIncompletePaymentFound: onIncompletePaymentFound,
+            onReadyForServerApproval: function(id) {
+                fetch("/api/bayar-keluar.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id, action: "approve", wallet_address: wallet })
+                });
+            },
+            onReadyForServerCompletion: function(id, txid) {
+                fetch("/api/bayar-keluar.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id, txid: txid, action: "complete", wallet_address: wallet })
+                }).then(function() {
+                    updateStatus("✅ 0.1 Pi dihantar!");
+                }).catch(async function() {
+                    await fetch("/api/cuci.js", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentId: id, txid: txid })
+                    });
+                    updateStatus("✅ Pulih!");
+                });
+            },
+            onCancel: function() { updateStatus("❌ Dibatalkan"); },
+            onError: function(e) { updateStatus("❌ Ralat: " + e.message); }
+        }
+    );
+}

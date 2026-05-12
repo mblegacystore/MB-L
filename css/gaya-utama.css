@@ -235,17 +235,6 @@ h1 {
     color: #fff;
 }
 
-.golden-key {
-    background: #FFD700;
-    color: #000;
-    padding: 15px;
-    margin-top: 15px;
-    text-align: center;
-    font-weight: bold;
-    letter-spacing: 2px;
-    word-break: break-all;
-}
-
 .golden-btn {
     display: block;
     width: 85%;
@@ -309,17 +298,6 @@ h1 {
 .footer-frame {
     margin-top: 20px;
     border: 1px solid #ff0000;
-    padding: 10px 15px;
-    text-align: center;
-    background: rgba(200, 0, 0, 0.8);
-    max-width: 400px;
-    border-radius: 4px;
-    animation: warningBlink 0.8s infinite;
-}
-
-.footer-frame {
-    margin-top: 20px;
-    border: 1px solid #ff0000;
     padding: 15px 20px;
     text-align: center;
     background: rgba(200, 0, 0, 0.8);
@@ -336,3 +314,15 @@ h1 {
     font-weight: bold;
     line-height: 1.5;
 }
+
+footer {
+    margin-top: 40px;
+    padding-top: 15px;
+    border-top: 1px solid #FFD700;
+    color: #777;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    }

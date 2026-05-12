@@ -1,3 +1,6 @@
+// fungsi/transaksi.js – Versi Muktamad dengan Pencegahan Awal
+
+// ========== FUNGSI PEMULIHAN ==========
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
@@ -25,9 +28,40 @@ async function onIncompletePaymentFound(payment) {
     }
 }
 
-function buyProduct(key, amount) {
+// ========== PENCEGAHAN AWAL ==========
+async function bersihkanSebelumBayar() {
+    try {
+        const payments = await Pi.getIncompletePayments();
+        if (payments && payments.length > 0) {
+            updateStatus("Membersihkan transaksi terdahulu...");
+            for (let p of payments) {
+                await fetch("/api/cuci.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: p.identifier })
+                });
+            }
+            updateStatus("Sedia untuk pembayaran baru.");
+        }
+    } catch (e) {}
+}
+
+function sahkanWallet() {
+    if (!currentUser || !currentUser.wallet_address || !currentUser.wallet_address.startsWith("G")) {
+        updateStatus("Wallet tidak sah. Sila login semula.");
+        return false;
+    }
+    return true;
+}
+
+// ========== U2A: BELI PRODUK ==========
+async function buyProduct(key, amount) {
+    if (!sahkanWallet()) return;
+    await bersihkanSebelumBayar();
+    
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
+    
     Pi.createPayment(
         { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
         {
@@ -68,10 +102,14 @@ function buyProduct(key, amount) {
     );
 }
 
+// ========== A2U: PIONEER REWARD ==========
 async function requestPayout() {
-    if (!currentUser) return;
+    if (!sahkanWallet()) return;
+    await bersihkanSebelumBayar();
+    
     let wallet = currentUser.wallet_address || null;
     updateStatus("Mencipta A2U...");
+    
     Pi.createPayment(
         { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
         {

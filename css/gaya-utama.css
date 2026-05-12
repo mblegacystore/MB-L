@@ -186,12 +186,15 @@ h1 {
 
 .modal-content {
     background-color: #0d0d0d;
-    border: 1px solid #FFD700;
+    border: 2px solid #FFD700;
     padding: 30px;
-    max-width: 400px;
+    max-width: 420px;
     width: 90%;
     color: #fff;
     text-align: left;
+    border-radius: 6px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .modal-content h3 {
@@ -202,32 +205,16 @@ h1 {
     text-align: center;
 }
 
+.modal-content h4 {
+    color: #FFD700;
+    margin-top: 15px;
+}
+
 .modal-content p {
     color: #ccc;
     font-size: 0.85rem;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     line-height: 1.5;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-.modal-content ul {
-    color: #ccc;
-    font-size: 0.85rem;
-    margin-left: 20px;
-    margin-bottom: 15px;
-}
-
-.modal-content ul li {
-    margin-bottom: 8px;
-}
-
-.modal-price {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #FFD700;
-    margin-bottom: 20px;
-    text-align: center;
 }
 
 .modal-close-btn {
@@ -238,7 +225,6 @@ h1 {
     cursor: pointer;
     font-weight: bold;
     text-transform: uppercase;
-    transition: all 0.3s;
     display: block;
     margin: 20px auto 0;
     text-align: center;

@@ -37,16 +37,16 @@
 <!-- MERCHANT VAULT -->
 <div id="merchant-content" style="display:none; max-width:400px; width:100%; text-align:center; margin-bottom:20px;">
     <div style="border:2px solid #FFD700; padding:30px 20px; background:rgba(255,215,0,0.03); border-radius:4px;">
-        <h3 style="color:#FFD700; font-size:1.3rem; letter-spacing:4px;">🛡️ THE MERCHANT VAULT</h3>
-        <p style="color:#ccc; font-size:0.85rem; margin:10px 0;">Exclusive products from trusted, verified Pi merchants.</p>
-        <div style="background:rgba(255,215,0,0.1); border:1px solid #FFD700; padding:12px 25px; display:inline-block; border-radius:2px; margin:10px 0;">
-            <span style="color:#FFD700; font-weight:bold; letter-spacing:3px;">🚀 COMING SOON</span>
+        <h3 style="color:#FFD700;">🛡️ THE MERCHANT VAULT</h3>
+        <p style="color:#ccc;">Exclusive products from trusted, verified Pi merchants.</p>
+        <div style="background:rgba(255,215,0,0.1); border:1px solid #FFD700; padding:12px 25px; display:inline-block; margin:10px 0;">
+            <span style="color:#FFD700; font-weight:bold;">🚀 COMING SOON</span>
         </div>
         <div style="text-align:left; display:inline-block; margin-top:15px;">
-            <p style="color:#999; font-size:0.7rem; margin:5px 0;">✦ Invitation-only for verified sellers</p>
-            <p style="color:#999; font-size:0.7rem; margin:5px 0;">✦ Physical goods & digital assets</p>
-            <p style="color:#999; font-size:0.7rem; margin:5px 0;">✦ Secured by Pi SDK payments</p>
-            <p style="color:#999; font-size:0.7rem; margin:5px 0;">✦ Built on trust & transparency</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Invitation-only for verified sellers</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Physical goods & digital assets</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Secured by Pi SDK payments</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Built on trust & transparency</p>
         </div>
         <p style="color:#555; font-size:0.65rem; margin-top:15px;">Powered by Pi Network • MB LEGACY STORE</p>
     </div>
@@ -61,7 +61,7 @@
         <div class="free-banner">🆓 FREE EDITION</div>
         <div class="product-info">
             <h3 id="title-sentinel">DOSSIER PI SENTINEL</h3>
-            <p id="desc-sentinel">Panduan perisikan pasaran strategik PERCUMA untuk Pioneer moden.</p>
+            <p id="desc-sentinel">Panduan perisikan pasaran strategik PERCUMA.</p>
             <span class="product-price" style="color:#27ae60;">PERCUMA</span>
         </div>
     </div>
@@ -70,7 +70,7 @@
         <div class="product-img-placeholder">II</div>
         <div class="product-info">
             <h3 id="title-echelon">PEK TAKLIMAT ECHELON</h3>
-            <p id="desc-echelon">Modul pendidikan lanjutan mengenai Pi, AI, RWA, dan perubahan global.</p>
+            <p id="desc-echelon">Modul pendidikan lanjutan Pi, AI, RWA.</p>
             <span class="product-price">1.0000000 Pi</span>
         </div>
     </div>
@@ -79,7 +79,7 @@
         <div class="product-img-placeholder">III</div>
         <div class="product-info">
             <h3 id="title-command">SUIT PUSAT KAWALAN</h3>
-            <p id="desc-command">Set alat profesional untuk membina jenama global.</p>
+            <p id="desc-command">Set alat profesional bina jenama global.</p>
             <span class="product-price">5.0000000 Pi</span>
         </div>
     </div>
@@ -91,7 +91,7 @@
         <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
         <div class="product-info">
             <h3 id="title-payout">TUNTUT TESTNET PI (A2U)</h3>
-            <p id="desc-payout">Sahkan sistem pembayaran kami. Terima 0.1 Testnet Pi terus ke dompet anda.</p>
+            <p id="desc-payout">Terima 0.1 Testnet Pi terus ke dompet anda.</p>
             <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
         </div>
     </div>
@@ -104,8 +104,8 @@
 <button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">BAYAR 5 PI</button>
 
 <!-- MODAL -->
-<div id="productModal" class="modal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.95); align-items:center; justify-content:center; overflow-y:auto;">
-    <div class="modal-content" id="modalBody" style="background-color:#0d0d0d; border:1px solid #FFD700; padding:30px; max-width:400px; width:90%; color:#fff; text-align:left; margin:auto; border-radius:4px;"></div>
+<div id="productModal" class="modal">
+    <div class="modal-content" id="modalBody"></div>
 </div>
 
 <div class="footer-frame">
@@ -119,11 +119,10 @@
 <script src="fungsi/bahasa.js"></script>
 <script src="fungsi/modal.js"></script>
 <script src="fungsi/transaksi.js"></script>
-
 <script>
     Pi.init({ version: "2.0", sandbox: true });
+    switchLanguage('ms');
 
-    // ========== TAB SWITCH ==========
     window.switchTab = function(tab) {
         var d = document.getElementById('digital-content');
         var p = document.getElementById('payout-content');
@@ -137,13 +136,13 @@
         if (tab === 'digital') {
             d.style.display='block'; p.style.display='block'; m.style.display='none';
             s.style.display='block'; l.style.display='block'; b1.style.display='block'; b10.style.display='block';
-            td.style.background='#FFD700'; td.style.color='#000'; td.style.border='1px solid #FFD700';
-            tm.style.background='transparent'; tm.style.color='#666'; tm.style.border='1px solid #666';
+            td.style.background='#FFD700'; td.style.color='#000';
+            tm.style.background='transparent'; tm.style.color='#666';
         } else {
             d.style.display='none'; p.style.display='none'; m.style.display='block';
             s.style.display='none'; l.style.display='none'; b1.style.display='none'; b10.style.display='none';
-            tm.style.background='#FFD700'; tm.style.color='#000'; tm.style.border='1px solid #FFD700';
-            td.style.background='transparent'; td.style.color='#666'; td.style.border='1px solid #666';
+            tm.style.background='#FFD700'; tm.style.color='#000';
+            td.style.background='transparent'; td.style.color='#666';
         }
     };
 </script>

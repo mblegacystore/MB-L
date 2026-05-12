@@ -1,4 +1,4 @@
-// fungsi/bahasa.js – 5 Bahasa
+// fungsi/bahasa.js – 5 Bahasa (MS, EN, ID, ZH, AR)
 const LANG = {
     ms: {
         subtitle: "Pi Anda, Legasi Anda.",
@@ -16,8 +16,7 @@ const LANG = {
         pay1: "BAYAR 1.0 PI",
         pay5: "BAYAR 5 PI",
         security: "NOTIS KESELAMATAN: MB Legacy Store TIDAK AKAN PERNAH meminta frasa laluan dompet anda.",
-        footer: "© 2026 MB Legacy Store. Hak Cipta Terpelihara.",
-        closeBtn: "TUTUP"
+        footer: "© 2026 MB Legacy Store. Hak Cipta Terpelihara."
     },
     en: {
         subtitle: "Your Pi, Your Legacy.",
@@ -35,8 +34,7 @@ const LANG = {
         pay1: "PAY 1.0 PI",
         pay5: "PAY 5 PI",
         security: "SECURITY NOTICE: MB Legacy Store will NEVER ask for your wallet passphrase.",
-        footer: "© 2026 MB Legacy Store. All Rights Reserved.",
-        closeBtn: "CLOSE"
+        footer: "© 2026 MB Legacy Store. All Rights Reserved."
     },
     id: {
         subtitle: "Pi Anda, Warisan Anda.",
@@ -54,8 +52,7 @@ const LANG = {
         pay1: "BAYAR 1.0 PI",
         pay5: "BAYAR 5 PI",
         security: "PEMBERITAHUAN KEAMANAN: MB Legacy Store TIDAK AKAN PERNAH meminta frasa sandi dompet Anda.",
-        footer: "© 2026 MB Legacy Store. Seluruh hak cipta.",
-        closeBtn: "TUTUP"
+        footer: "© 2026 MB Legacy Store. Seluruh hak cipta."
     },
     zh: {
         subtitle: "您的Pi，您的遗产。",
@@ -73,8 +70,7 @@ const LANG = {
         pay1: "支付 1.0 PI",
         pay5: "支付 5 PI",
         security: "安全通知：MB Legacy Store绝不会要求您提供钱包密码。",
-        footer: "© 2026 MB Legacy Store。版权所有。",
-        closeBtn: "关闭"
+        footer: "© 2026 MB Legacy Store。版权所有。"
     },
     ar: {
         subtitle: "باي، إرثك.",
@@ -92,8 +88,7 @@ const LANG = {
         pay1: "ادفع 1.0 باي",
         pay5: "ادفع 5 باي",
         security: "إشعار أمان: لن يطلب منك متجر إم بي ليجاسي أبداً عبارة مرور محفظتك.",
-        footer: "© 2026 متجر إم بي ليجاسي. جميع الحقوق محفوظة.",
-        closeBtn: "إغلاق"
+        footer: "© 2026 متجر إم بي ليجاسي. جميع الحقوق محفوظة."
     }
 };
 
@@ -120,4 +115,4 @@ function switchLanguage(lang) {
     document.getElementById('footer-text').textContent = t.footer;
     document.querySelectorAll('.lang-selector button').forEach(function(b){ b.classList.remove('active'); });
     document.getElementById('lang-'+lang).classList.add('active');
-}
+        }

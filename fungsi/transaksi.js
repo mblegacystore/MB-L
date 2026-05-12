@@ -1,5 +1,3 @@
-// fungsi/transaksi.js – Versi Muktamad
-
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
@@ -45,15 +43,10 @@ async function bersihkanSebelumBayar() {
 }
 
 async function buyProduct(key, amount) {
-    if (!currentUser || !currentUser.wallet_address) {
-        updateStatus("Sila login dahulu.");
-        return;
-    }
+    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     await bersihkanSebelumBayar();
-    
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
-    
     Pi.createPayment(
         { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
         {
@@ -72,19 +65,10 @@ async function buyProduct(key, amount) {
                     body: JSON.stringify({ paymentId: id, txid: txid })
                 }).then(function() {
                     updateStatus("Berjaya!");
-                    if (key === "echelon") {
-                        currentUser.boughtEchelon = true;
-                        showEchelonReport();
-                    }
-                    if (key === "command") {
-                        showLockedContent("command");
-                    }
+                    if (key === "echelon") { currentUser.boughtEchelon = true; showEchelonReport(); }
+                    if (key === "command") { showLockedContent("command"); }
                 }).catch(async function() {
-                    await fetch("/api/cuci.js", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentId: id, txid: txid })
-                    });
+                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
                 });
             },
@@ -95,39 +79,21 @@ async function buyProduct(key, amount) {
 }
 
 async function requestPayout() {
-    if (!currentUser || !currentUser.wallet_address) {
-        updateStatus("Sila login dahulu.");
-        return;
-    }
+    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     await bersihkanSebelumBayar();
-    
-    let wallet = currentUser.wallet_address;
     updateStatus("Mencipta A2U...");
-    
     Pi.createPayment(
         { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-keluar.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id, action: "approve", wallet_address: wallet })
-                });
+                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, action: "approve" }) });
             },
             onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-keluar.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id, txid: txid, action: "complete", wallet_address: wallet })
-                }).then(function() {
-                    updateStatus("0.1 Pi dihantar!");
-                }).catch(async function() {
-                    await fetch("/api/cuci.js", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentId: id, txid: txid })
-                    });
+                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) })
+                .then(function() { updateStatus("0.1 Pi dihantar!"); })
+                .catch(async function() {
+                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
                 });
             },
@@ -135,4 +101,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-                                          }
+}

@@ -47,8 +47,12 @@ async function bersihkanSebelumBayar() {
 }
 
 function sahkanWallet() {
-    if (!currentUser || !currentUser.wallet_address || !currentUser.wallet_address.startsWith("G")) {
-        updateStatus("Wallet tidak sah. Sila login semula.");
+    if (!currentUser) {
+        updateStatus("Sila login dahulu.");
+        return false;
+    }
+    if (!currentUser.wallet_address) {
+        updateStatus("Alamat wallet tidak ditemui. Sila login semula.");
         return false;
     }
     return true;

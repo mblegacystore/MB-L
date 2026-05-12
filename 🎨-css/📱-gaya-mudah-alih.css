@@ -1,0 +1,26 @@
+/* 📱-gaya-mudah-alih.css – Responsif untuk telefon */
+@media (max-width: 480px) {
+    .title-frame h1 {
+        font-size: 1.4em;
+    }
+
+    .product-card {
+        padding: 12px;
+    }
+
+    .golden-btn, .red-btn {
+        width: 95%;
+        padding: 12px;
+        font-size: 0.9em;
+    }
+
+    .lang-selector button {
+        padding: 4px 10px;
+        font-size: 0.7em;
+    }
+
+    .modal-content {
+        margin: 30px 10px;
+        padding: 15px;
+    }
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MB LEGACY STORE | Pi Commerce Malaysia</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <link rel="stylesheet" href="🎨-css/🏠-gaya-utama.css">
+    <link rel="stylesheet" href="🎨-css/📱-gaya-mudah-alih.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="title-frame">
+        <h1>MB LEGACY STORE</h1>
+        <p id="sub-title" class="subtitle">Pi Anda, Legasi Anda.</p>
+    </div>
+
+    <!-- BAHASA -->
+    <div class="lang-selector">
+        <button id="lang-ms" class="active" onclick="switchLanguage('ms')">🇲🇾 Melayu</button>
+        <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 Indonesia</button>
+        <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+        <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 العربية</button>
+    </div>
+
+    <!-- PRODUK -->
+    <div class="treasury-section">
+        <h2 id="vault-title">✦ PETI SIMPANAN ✦</h2>
+
+        <!-- Pioneer Reward -->
+        <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700; background:rgba(255,215,0,0.08);">
+            <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
+            <div class="product-info">
+                <p id="title-payout" class="product-name" style="color:#FFD700;">TUNTUT TESTNET PI (A2U)</p>
+                <p id="desc-payout" class="product-desc">Sahkan sistem pembayaran kami.</p>
+                <p class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</p>
+            </div>
+        </div>
+
+        <!-- The Pi Sentinel Dossier -->
+        <div class="product-card" onclick="showFreeContent()">
+            <div class="free-banner">🆓 PERCUMA</div>
+            <div class="product-info">
+                <p id="title-sentinel" class="product-name">DOSSIER PI SENTINEL</p>
+                <p id="desc-sentinel" class="product-desc">Panduan strategik untuk Pioneer.</p>
+                <p class="product-price">PERCUMA</p>
+            </div>
+        </div>
+
+        <!-- Echelon -->
+        <div class="product-card" onclick="buyProduct('echelon',1)">
+            <div class="product-info">
+                <p id="title-echelon" class="product-name">PEK TAKLIMAT ECHELON</p>
+                <p id="desc-echelon" class="product-desc">Aset perisikan tahap lanjutan.</p>
+                <p class="product-price">1.0000000 Pi</p>
+            </div>
+        </div>
+
+        <!-- Command Center -->
+        <div class="product-card" onclick="buyProduct('command',5)">
+            <div class="product-info">
+                <p id="title-command" class="product-name">SUIT PUSAT KAWALAN</p>
+                <p id="desc-command" class="product-desc">Protokol kawalan pentadbiran penuh.</p>
+                <p class="product-price">5.0000000 Pi</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATUS & BUTANG -->
+    <div id="stickyStatus"><p id="stSticky">⏳ Menunggu Sambungan...</p></div>
+    <button id="btn-login" class="golden-btn" onclick="doLogin()">🔐 Sambung Akaun</button>
+    <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">💰 Bayar 1.0000000 Pi</button>
+    <button id="btn-pay10" class="red-btn" disabled onclick="buyProduct('command',5)">🔥 Bayar 5.0000000 Pi</button>
+
+    <!-- SOP -->
+    <div class="sop-box">
+        <div id="sop-title-ui" class="sop-title">📜 SOP PENGHANTARAN MALAYSIA</div>
+        <div id="sop-text" class="sop-content">POS: 24-48 jam bekerja. KURIER: J&T, PosLaju, NinjaVan, DHL.</div>
+        <button onclick="copySOP()" class="copy-btn">📋 SALIN SOP PENIAGA</button>
+    </div>
+
+    <!-- FOOTER AMARAN -->
+    <div class="footer-frame"><p id="security-text">⚠️ MB LEGACY STORE TIDAK AKAN MEMINTA FRASA LALUAN WALLET ANDA!</p></div>
+
+    <!-- MODAL -->
+    <div id="productModal" class="modal">
+        <div class="modal-content" id="modalBody"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>© 2026 MB Legacy Store. Dibina untuk Pi Network.</footer>
+
+    <!-- SKRIP -->
+    <script src="⚙️-fungsi/🌍-global.js"></script>
+    <script src="⚙️-fungsi/🔐-akaun.js"></script>
+    <script src="⚙️-fungsi/🌐-bahasa.js"></script>
+    <script src="⚙️-fungsi/🛡️-keselamatan.js"></script>
+    <script src="⚙️-fungsi/🪟-modal.js"></script>
+    <script src="⚙️-fungsi/💰-transaksi.js"></script>
+    <script src="⚙️-fungsi/🔧-utiliti.js"></script>
+    <script src="💬-teks/🗣️-teks.js"></script>
+    <script src="💬-teks/⚠️-amaran-keselamatan.js"></script>
+    <script>
+        Pi.init({ version: "2.0", sandbox: true });
+        switchLanguage('ms');
+    </script>
+</body>
+</html>

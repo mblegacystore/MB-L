@@ -1,6 +1,5 @@
-// fungsi/transaksi.js – Versi Muktamad dengan Pencegahan Awal
+// fungsi/transaksi.js – Versi Muktamad
 
-// ========== FUNGSI PEMULIHAN ==========
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
@@ -28,7 +27,6 @@ async function onIncompletePaymentFound(payment) {
     }
 }
 
-// ========== PENCEGAHAN AWAL ==========
 async function bersihkanSebelumBayar() {
     try {
         const payments = await Pi.getIncompletePayments();
@@ -46,21 +44,11 @@ async function bersihkanSebelumBayar() {
     } catch (e) {}
 }
 
-function sahkanWallet() {
-    if (!currentUser) {
-        updateStatus("Sila login dahulu.");
-        return false;
-    }
-    if (!currentUser.wallet_address) {
-        updateStatus("Alamat wallet tidak ditemui. Sila login semula.");
-        return false;
-    }
-    return true;
-}
-
-// ========== U2A: BELI PRODUK ==========
 async function buyProduct(key, amount) {
-    if (!sahkanWallet()) return;
+    if (!currentUser || !currentUser.wallet_address) {
+        updateStatus("Sila login dahulu.");
+        return;
+    }
     await bersihkanSebelumBayar();
     
     let total = parseFloat(amount).toFixed(7);
@@ -106,12 +94,14 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: PIONEER REWARD ==========
 async function requestPayout() {
-    if (!sahkanWallet()) return;
+    if (!currentUser || !currentUser.wallet_address) {
+        updateStatus("Sila login dahulu.");
+        return;
+    }
     await bersihkanSebelumBayar();
     
-    let wallet = currentUser.wallet_address || null;
+    let wallet = currentUser.wallet_address;
     updateStatus("Mencipta A2U...");
     
     Pi.createPayment(
@@ -145,4 +135,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-}
+                                          }

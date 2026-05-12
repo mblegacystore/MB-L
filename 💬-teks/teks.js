@@ -1,4 +1,4 @@
-// 🗣️-teks.js – Semua mesej untuk 5 bahasa
+// teks.js – Semua mesej untuk 5 bahasa
 const TEKS = {
     ms: {
         sop: "POS: Maksimum 24-48 jam hari bekerja.\nKURIER: J&T, PosLaju, NinjaVan, DHL.\nBUKTI: Nombor Tracking & Gambar Bungkusan diperlukan.\nKUALITI: Bubble Wrap & Kotak Kukuh wajib.",

@@ -7,11 +7,7 @@ async function doLogin() {
             username: auth.user.username,
             wallet_address: auth.user.wallet_address || ""
         };
-        
-        // Tunjuk semua data yang diterima
-        updateStatus("UID: " + currentUser.uid + " | Wallet: " + (currentUser.wallet_address || "TIADA"));
-        console.log("AUTH DATA:", JSON.stringify(auth));
-        
+        updateStatus(currentUser.username);
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
     } catch (e) {

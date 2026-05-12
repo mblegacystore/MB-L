@@ -1,4 +1,4 @@
-// ⚠️-amaran-keselamatan.js – Teks amaran keselamatan 5 bahasa
+// amaran-keselamatan.js – Teks amaran keselamatan 5 bahasa
 const AMARAN = {
     ms: {
         tajuk: "⚠️ AMARAN KESELAMATAN",

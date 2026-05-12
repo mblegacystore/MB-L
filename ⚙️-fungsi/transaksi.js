@@ -1,9 +1,8 @@
-// transaksi.js – Urus pembayaran
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
     try {
-        let res = await fetch("/api/cuci.js", {
+        let res = await fetch("/🛡️-api/🧹-cuci.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ paymentId: payment.identifier })
@@ -34,14 +33,14 @@ function buyProduct(key, amount) {
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-sah.js", {
+                fetch("/🛡️-api/💰-bayar-sah.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id })
                 });
             },
             onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-selesai.js", {
+                fetch("/🛡️-api/👍-bayar-selesai.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid })
@@ -55,7 +54,7 @@ function buyProduct(key, amount) {
                         showLockedContent("command");
                     }
                 }).catch(async function() {
-                    await fetch("/api/cuci.js", {
+                    await fetch("/🛡️-api/🧹-cuci.js", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ paymentId: id, txid: txid })
@@ -78,21 +77,21 @@ async function requestPayout() {
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-keluar.js", {
+                fetch("/🛡️-api/💸-bayar-keluar.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, action: "approve", wallet_address: wallet })
                 });
             },
             onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-keluar.js", {
+                fetch("/🛡️-api/💸-bayar-keluar.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid, action: "complete", wallet_address: wallet })
                 }).then(function() {
                     updateStatus("0.1 Pi dihantar!");
                 }).catch(async function() {
-                    await fetch("/api/cuci.js", {
+                    await fetch("/🛡️-api/🧹-cuci.js", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ paymentId: id, txid: txid })

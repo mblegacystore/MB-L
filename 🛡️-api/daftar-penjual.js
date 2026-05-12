@@ -1,4 +1,4 @@
-// 🏪-daftar-penjual.js – Daftar penjual baru
+// daftar-penjual.js – Daftar penjual baru
 export default async function handler(req, res) {
     const { username, wallet_address, nama_kedai } = req.body || {};
     if (!username || !wallet_address || !nama_kedai) return res.status(400).json({ error: "Data tak lengkap" });

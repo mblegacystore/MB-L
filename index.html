@@ -19,55 +19,51 @@
 
     <!-- BAHASA -->
     <div class="lang-selector">
-        <button id="lang-ms" class="active" onclick="switchLanguage('ms')">🇲🇾 MS</button>
-        <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 EN</button>
-        <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
-        <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
-        <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+        <button id="lang-ms" class="active" onclick="switchLanguage('ms')">MS</button>
+        <button id="lang-en" onclick="switchLanguage('en')">EN</button>
+        <button id="lang-id" onclick="switchLanguage('id')">ID</button>
+        <button id="lang-zh" onclick="switchLanguage('zh')">中文</button>
+        <button id="lang-ar" onclick="switchLanguage('ar')">AR</button>
     </div>
 
-    <!-- TRUST BADGE -->
     <div class="trust-badge">
         <p>DILINDUNGI OLEH PI NETWORK</p>
     </div>
 
-    <!-- PRODUK -->
+    <!-- THE VAULT -->
     <div class="treasury-section">
         <h2>✦ THE VAULT ✦</h2>
 
-        <!-- The Pi Sentinel Dossier -->
         <div class="product-card" onclick="showFreeContent()">
-            <div class="free-banner" style="background:#27ae60; color:#fff;">🆓 FREE EDITION</div>
+            <div class="free-banner">🆓 FREE EDITION</div>
             <div class="product-info">
                 <h3 id="title-sentinel">THE PI SENTINEL DOSSIER</h3>
-                <p id="desc-sentinel">A FREE strategic market intelligence primer for the modern Pioneer.</p>
+                <p id="desc-sentinel">A FREE strategic market intelligence primer.</p>
                 <span class="product-price">FREE</span>
             </div>
         </div>
 
-        <!-- Echelon -->
         <div class="product-card" onclick="buyProduct('echelon',1)">
-            <div class="free-banner" style="background:#27ae60; color:#fff;">🆓 FREE EDITION</div>
-            <div class="product-info">
-                <h3 id="title-echelon">THE ECHELON BRIEFING PACK</h3>
-                <p id="desc-echelon">An advanced education module on Pi, AI, RWA, and global shifts.</p>
-                <span class="product-price">FREE</span>
-            </div>
-        </div>
-
-        <!-- Command Center -->
-        <div class="product-card" onclick="buyProduct('command',1)">
             <div class="product-img-placeholder">🔴</div>
             <div class="product-info">
-                <h3 id="title-command">THE COMMAND CENTER SUITE</h3>
-                <p id="desc-command">A professional toolset for building a global brand.</p>
+                <h3 id="title-echelon">THE ECHELON BRIEFING PACK</h3>
+                <p id="desc-echelon">An advanced education module.</p>
                 <span class="product-price">1.0000000 Pi</span>
             </div>
         </div>
 
-        <hr class="gold-divider">
+        <div class="product-card" onclick="buyProduct('command',5)">
+            <div class="product-img-placeholder">🔴</div>
+            <div class="product-info">
+                <h3 id="title-command">THE COMMAND CENTER SUITE</h3>
+                <p id="desc-command">A professional toolset.</p>
+                <span class="product-price">5.0000000 Pi</span>
+            </div>
+        </div>
+    </div>
 
-        <!-- PIONEER REWARD (Payout) -->
+    <!-- PIONEER REWARD (Payout) - DI BAWAH VAULT, DI ATAS STATUS -->
+    <div class="treasury-section">
         <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
             <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
             <div class="product-info">
@@ -79,12 +75,12 @@
     </div>
 
     <!-- STATUS BAR -->
-    <div id="stickyStatus"><p id="stSticky">⏳ Waiting for Connection...</p></div>
+    <div id="stickyStatus"><p id="stSticky">Waiting for Connection...</p></div>
 
     <!-- BUTTONS -->
-    <button id="btn-login" class="golden-btn" onclick="doLogin()">🔐 CONNECT ACCOUNT</button>
-    <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('command',1)">💰 PAY 1.0 PI</button>
-    <button id="btn-payout" class="golden-btn" disabled onclick="requestPayout()">🎁 CLAIM PAYOUT</button>
+    <button id="btn-login" class="golden-btn" onclick="doLogin()">CONNECT ACCOUNT</button>
+    <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0000000 PI</button>
+    <button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5.0000000 PI</button>
 
     <!-- MODAL -->
     <div id="productModal" class="modal">
@@ -93,12 +89,11 @@
 
     <!-- SECURITY FOOTER -->
     <div class="footer-frame">
-        <p>⚠️ MB LEGACY STORE WILL NEVER ASK FOR YOUR WALLET PASSPHRASE!</p>
+        <p>MB LEGACY STORE WILL NEVER ASK FOR YOUR WALLET PASSPHRASE!</p>
     </div>
 
     <footer>© 2026 MB LEGACY STORE</footer>
 
-    <!-- SKRIP -->
     <script src="fungsi/global.js"></script>
     <script src="fungsi/akaun.js"></script>
     <script src="fungsi/bahasa.js"></script>
@@ -113,4 +108,4 @@
         switchLanguage('en');
     </script>
 </body>
-        </html>
+</html>

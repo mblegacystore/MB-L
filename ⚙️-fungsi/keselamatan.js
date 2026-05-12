@@ -1,4 +1,4 @@
-// 🛡️-keselamatan.js – Amaran keselamatan & pengesahan
+// keselamatan.js – Amaran keselamatan & pengesahan
 function paparAmaran() {
     console.log("🛡️ MB LEGACY STORE TIDAK AKAN MEMINTA FRASA LALUAN WALLET ANDA!");
 }

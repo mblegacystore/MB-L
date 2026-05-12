@@ -4,6 +4,26 @@
     {
       "src": "api/*.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "css/*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "fungsi/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "teks/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "halaman/*.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [

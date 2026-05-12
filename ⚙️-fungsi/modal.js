@@ -1,4 +1,4 @@
-// 🪟-modal.js – Tingkap timbul
+// modal.js – Tingkap timbul
 function showFreeContent() {
     document.getElementById("modalBody").innerHTML = "<h2>THE PI SENTINEL DOSSIER</h2><p>Panduan strategik untuk Pioneer. Selamat berdagang dalam ekosistem Pi.</p>";
     document.getElementById("productModal").style.display = "block";

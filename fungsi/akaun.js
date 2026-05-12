@@ -7,10 +7,10 @@ async function doLogin() {
             username: auth.user.username,
             wallet_address: auth.user.wallet_address
         };
-        updateStatus(currentUser.username);
+        updateStatus("✅ " + currentUser.username + " | Wallet: " + (currentUser.wallet_address ? "OK" : "TIADA"));
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
     } catch (e) {
-        updateStatus("Login gagal");
+        updateStatus("Login gagal: " + e.message);
     }
 }

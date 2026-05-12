@@ -1,4 +1,4 @@
-// 🌐-bahasa.js – 5 Bahasa (Melayu, English, Indonesia, 中文, العربية)
+// bahasa.js – 5 Bahasa (Melayu, English, Indonesia, 中文, العربية)
 let bahasa = "ms";
 
 function switchLanguage(lang) {

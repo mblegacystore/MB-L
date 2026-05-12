@@ -1,4 +1,4 @@
-// ↩️-refund.js – Pulangkan wang
+// refund.js – Pulangkan wang
 export default async function handler(req, res) {
     const { paymentId, amount, wallet_address } = req.body || {};
     if (!paymentId || !wallet_address || !amount) return res.status(400).json({ error: "Data tak lengkap" });

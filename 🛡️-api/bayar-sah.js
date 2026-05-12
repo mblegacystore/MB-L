@@ -1,4 +1,4 @@
-// 💰-bayar-sah.js – Sahkan pembayaran baru
+// bayar-sah.js – Sahkan pembayaran baru
 export default async function handler(req, res) {
     const { paymentId } = req.body || {};
     if (!paymentId) return res.status(400).json({ error: "paymentId missing" });

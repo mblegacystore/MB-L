@@ -1,4 +1,4 @@
-// 🧹-cuci.js – Pulihkan pembayaran tersekat
+// cuci.js – Pulihkan pembayaran tersekat
 export default async function handler(req, res) {
     const { paymentId, txid } = req.body || {};
 

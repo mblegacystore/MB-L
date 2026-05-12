@@ -1,8 +1,8 @@
-/* ==================== MB LEGACY STORE - SHARED CSS ==================== */
-/* Tema: Emas-Hitam | Diguna oleh: index.html, buyer.html, seller.html */
-
-/* ---------- RESET & BASE ---------- */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 body {
     background-color: #050505;
@@ -16,7 +16,6 @@ body {
     padding-bottom: 80px;
 }
 
-/* ---------- HEADER / TITLE ---------- */
 .title-frame {
     border: 2px solid #FFD700;
     padding: 20px 40px;
@@ -41,7 +40,6 @@ h1 {
     letter-spacing: 3px;
 }
 
-/* ---------- GOLD DIVIDER ---------- */
 .gold-divider {
     width: 100%;
     max-width: 400px;
@@ -52,7 +50,6 @@ h1 {
     opacity: 0.5;
 }
 
-/* ---------- LANGUAGE SELECTOR ---------- */
 .lang-selector {
     margin-bottom: 20px;
     text-align: center;
@@ -80,39 +77,6 @@ h1 {
     color: #000;
 }
 
-/* ---------- TAB BUTTONS ---------- */
-.tab-container {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 15px;
-    max-width: 400px;
-    width: 100%;
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 10px;
-    font-weight: bold;
-    letter-spacing: 2px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s;
-}
-
-.tab-btn.active {
-    background: #FFD700;
-    color: #000;
-    border: 1px solid #FFD700;
-}
-
-.tab-btn.inactive {
-    background: transparent;
-    color: #666;
-    border: 1px solid #666;
-}
-
-/* ---------- TRUST BADGE (legacy) ---------- */
 .trust-badge {
     border: 1px solid #FFD700;
     padding: 15px 20px;
@@ -128,7 +92,6 @@ h1 {
     letter-spacing: 1px;
 }
 
-/* ---------- TREASURY / PRODUCT CARDS ---------- */
 .treasury-section {
     width: 100%;
     max-width: 400px;
@@ -207,81 +170,6 @@ h1 {
     font-weight: bold;
 }
 
-/* ---------- BUTTONS ---------- */
-.golden-btn, .red-btn, .disabled-btn {
-    display: block;
-    width: 85%;
-    max-width: 400px;
-    margin: 0 auto 12px auto;
-    padding: 14px;
-    font-size: 1rem;
-    font-weight: bold;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 2px;
-}
-
-.golden-btn {
-    background: rgba(255,215,0,0.05);
-    color: #FFD700;
-    border: 1px solid #FFD700;
-}
-
-.golden-btn:hover {
-    background: #FFD700;
-    color: #000;
-    box-shadow: 0 0 25px rgba(255,215,0,0.6);
-}
-
-.red-btn {
-    background: rgba(231,76,60,0.05);
-    color: #E74C3C;
-    border: 1px solid #E74C3C;
-}
-
-.red-btn:hover {
-    background: #E74C3C;
-    color: #fff;
-    box-shadow: 0 0 25px rgba(231,76,60,0.6);
-}
-
-.disabled-btn {
-    background: transparent;
-    color: #444;
-    border: 1px solid #222;
-    cursor: not-allowed;
-}
-
-.golden-btn:disabled, .red-btn:disabled {
-    border-color: #333;
-    color: #333;
-    cursor: not-allowed;
-    box-shadow: none;
-    background: transparent;
-}
-
-/* ---------- BACK BUTTON ---------- */
-.back-btn {
-    background: transparent;
-    color: #FFD700;
-    border: 1px solid #FFD700;
-    padding: 8px 20px;
-    margin-bottom: 15px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    transition: all 0.3s;
-}
-
-.back-btn:hover {
-    background: #FFD700;
-    color: #000;
-}
-
-/* ---------- MODAL ---------- */
 .modal {
     display: none;
     position: fixed;
@@ -320,6 +208,7 @@ h1 {
     margin-bottom: 15px;
     line-height: 1.5;
     word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .modal-content ul {
@@ -360,7 +249,51 @@ h1 {
     color: #fff;
 }
 
-/* ---------- STATUS BAR ---------- */
+.golden-key {
+    background: #FFD700;
+    color: #000;
+    padding: 15px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 2px;
+    word-break: break-all;
+}
+
+.golden-btn {
+    display: block;
+    width: 85%;
+    max-width: 400px;
+    margin: 0 auto 12px auto;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+    background: rgba(255,215,0,0.05);
+    color: #FFD700;
+    border: 1px solid #FFD700;
+    animation: none;
+}
+
+.golden-btn:hover {
+    background: #FFD700;
+    color: #000;
+    box-shadow: 0 0 25px rgba(255,215,0,0.6);
+}
+
+.golden-btn:disabled {
+    border-color: #333;
+    color: #333;
+    cursor: not-allowed;
+    box-shadow: none;
+    background: transparent;
+    animation: none;
+}
+
 #stickyStatus {
     width: 100%;
     max-width: 400px;
@@ -382,94 +315,9 @@ h1 {
     word-break: break-all;
 }
 
-/* ---------- MERCHANT VAULT ---------- */
-#merchant-content {
-    display: none;
-    max-width: 400px;
-    width: 100%;
-    text-align: center;
-    margin-bottom: 20px;
-    animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.merchant-card {
-    border: 2px solid #FFD700;
-    padding: 30px 20px;
-    background: rgba(255,215,0,0.03);
-    border-radius: 4px;
-    text-align: center;
-}
-
-.merchant-card h3 {
-    color: #FFD700;
-    font-size: 1.3rem;
-    letter-spacing: 4px;
-    margin-bottom: 10px;
-    font-weight: 400;
-}
-
-.merchant-card .subtitle {
-    color: #ccc;
-    font-size: 0.85rem;
-    margin-bottom: 20px;
-    letter-spacing: 1px;
-}
-
-.coming-soon-badge {
-    background: rgba(255,215,0,0.1);
-    border: 1px solid #FFD700;
-    padding: 12px 25px;
-    display: inline-block;
-    border-radius: 2px;
-    animation: badgePulse 2s infinite;
-}
-
-@keyframes badgePulse {
-    0%, 100% { box-shadow: 0 0 5px rgba(255,215,0,0.3); }
-    50%      { box-shadow: 0 0 20px rgba(255,215,0,0.7); }
-}
-
-.coming-soon-badge span {
-    color: #FFD700;
-    font-weight: bold;
-    letter-spacing: 3px;
-    font-size: 1rem;
-}
-
-.merchant-card .features {
-    margin-top: 20px;
-    text-align: left;
-    display: inline-block;
-}
-
-.merchant-card .features p {
-    color: #999;
-    font-size: 0.7rem;
-    margin: 5px 0;
-    letter-spacing: 1px;
-}
-
-.merchant-card .features p::before {
-    content: "✦ ";
-    color: #FFD700;
-}
-
-.merchant-footer {
-    color: #555;
-    font-size: 0.65rem;
-    margin-top: 15px;
-    letter-spacing: 2px;
-}
-
-/* ---------- SECURITY FOOTER ---------- */
 @keyframes warningBlink {
     0%, 100% { background-color: rgba(200, 0, 0, 0.8); border-color: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.9); }
-    50%      { background-color: rgba(255, 50, 50, 0.9); border-color: #ff5555; box-shadow: 0 0 45px rgba(255,0,0,1.0); }
+    50% { background-color: rgba(255, 50, 50, 0.9); border-color: #ff5555; box-shadow: 0 0 45px rgba(255,0,0,1.0); }
 }
 
 .footer-frame {
@@ -490,103 +338,9 @@ h1 {
     font-weight: bold;
 }
 
-/* ---------- PAGE FOOTER ---------- */
 footer {
     margin-top: 20px;
     color: #333;
     font-size: 0.6rem;
     letter-spacing: 2px;
 }
-
-/* ---------- DASHBOARD ELEMENTS ---------- */
-.dashboard-section {
-    width: 100%;
-    max-width: 400px;
-    margin-bottom: 20px;
-}
-
-.dashboard-card {
-    border: 1px solid #333;
-    padding: 20px;
-    margin-bottom: 15px;
-    background: rgba(255,255,255,0.02);
-    border-radius: 4px;
-}
-
-.dashboard-card h3 {
-    color: #FFD700;
-    font-size: 1rem;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-}
-
-.dashboard-card p {
-    color: #999;
-    font-size: 0.8rem;
-    margin-bottom: 8px;
-}
-
-.purchase-list {
-    list-style: none;
-    padding: 0;
-}
-
-.purchase-list li {
-    border-bottom: 1px solid #222;
-    padding: 12px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.purchase-list li:last-child {
-    border-bottom: none;
-}
-
-.purchase-name {
-    color: #FFD700;
-    font-size: 0.85rem;
-}
-
-.purchase-date {
-    color: #666;
-    font-size: 0.7rem;
-}
-
-.purchase-status {
-    color: #27ae60;
-    font-size: 0.7rem;
-    font-weight: bold;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #555;
-}
-
-.empty-state p {
-    font-size: 0.85rem;
-    margin-bottom: 8px;
-}
-
-.empty-state .icon {
-    font-size: 2rem;
-    margin-bottom: 15px;
-}
-
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 480px) {
-    .title-frame {
-        padding: 15px 20px;
-    }
-    
-    h1 {
-        font-size: 1.8rem;
-    }
-    
-    .lang-selector button {
-        padding: 4px 6px;
-        font-size: 0.65rem;
-    }
-    }

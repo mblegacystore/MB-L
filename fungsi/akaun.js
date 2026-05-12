@@ -1,104 +1,20 @@
-async function onIncompletePaymentFound(payment) {
-    updateStatus("Menyelesaikan pembayaran tertunda...");
-    pendingIncompleteCount++;
+async function doLogin() {
+    updateStatus("Menyambung...");
     try {
-        let res = await fetch("/api/cuci.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId: payment.identifier })
-        });
-        let data = await res.json();
-        pendingIncompleteCount--;
-        if (data.success) {
-            updateStatus("Selesai");
-            tryEnablePaymentButtons();
-            return { status: "COMPLETED" };
-        }
-        updateStatus("Dibersihkan");
+        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+        currentUser = {
+            uid: auth.user.uid,
+            username: auth.user.username,
+            wallet_address: auth.user.wallet_address || ""
+        };
+        
+        // Tunjuk semua data yang diterima
+        updateStatus("UID: " + currentUser.uid + " | Wallet: " + (currentUser.wallet_address || "TIADA"));
+        console.log("AUTH DATA:", JSON.stringify(auth));
+        
+        document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
-        return { status: "CANCELLED" };
     } catch (e) {
-        pendingIncompleteCount--;
-        updateStatus("Dibersihkan");
-        tryEnablePaymentButtons();
-        return { status: "CANCELLED" };
+        updateStatus("Login gagal: " + e.message);
     }
-}
-
-async function bersihkanSebelumBayar() {
-    try {
-        const payments = await Pi.getIncompletePayments();
-        if (payments && payments.length > 0) {
-            updateStatus("Membersihkan transaksi terdahulu...");
-            for (let p of payments) {
-                await fetch("/api/cuci.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: p.identifier })
-                });
-            }
-            updateStatus("Sedia untuk pembayaran baru.");
-        }
-    } catch (e) {}
-}
-
-async function buyProduct(key, amount) {
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
-    await bersihkanSebelumBayar();
-    let total = parseFloat(amount).toFixed(7);
-    updateStatus("Membayar " + total + " Pi...");
-    Pi.createPayment(
-        { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
-        {
-            onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-sah.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id })
-                });
-            },
-            onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-selesai.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id, txid: txid })
-                }).then(function() {
-                    updateStatus("Berjaya!");
-                    if (key === "echelon") { currentUser.boughtEchelon = true; showEchelonReport(); }
-                    if (key === "command") { showLockedContent("command"); }
-                }).catch(async function() {
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
-                });
-            },
-            onCancel: function() { updateStatus("Dibatalkan"); },
-            onError: function(e) { updateStatus("Ralat: " + e.message); }
-        }
-    );
-}
-
-async function requestPayout() {
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
-    await bersihkanSebelumBayar();
-    updateStatus("Mencipta A2U...");
-    Pi.createPayment(
-        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
-        {
-            onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, action: "approve" }) });
-            },
-            onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) })
-                .then(function() { updateStatus("0.1 Pi dihantar!"); })
-                .catch(async function() {
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
-                });
-            },
-            onCancel: function() { updateStatus("Dibatalkan"); },
-            onError: function(e) { updateStatus("Ralat: " + e.message); }
-        }
-    );
 }

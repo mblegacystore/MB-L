@@ -1,0 +1,56 @@
+POLISI REFUND MB LEGACY STORE
+================================
+
+[MS] 1. KELAYAKAN REFUND
+Refund boleh diminta dalam masa 7 hari selepas terima barang, jika barang rosak, salah, atau tak sampai.
+
+[EN] 1. REFUND ELIGIBILITY
+Refund can be requested within 7 days of receiving item, if item is damaged, wrong, or not received.
+
+[ID] 1. KELAYAKAN REFUND
+Refund dapat diminta dalam 7 hari setelah terima barang, jika barang rusak, salah, atau tak sampai.
+
+[ZH] 1. 退款资格
+如果商品损坏、错误或未收到，可在收到商品后7天内申请退款。
+
+[AR] 1. أهلية الاسترداد
+يمكن طلب الاسترداد في غضون 7 أيام من استلام السلعة، إذا كانت تالفة أو خاطئة أو لم تصل.
+
+================================
+
+[MS] 2. PROSES
+Buka aduan melalui Pusat Bantuan. Sertakan bukti. Diproses dalam 3-7 hari bekerja.
+
+[EN] 2. PROCESS
+Open a dispute via Help Center. Include proof. Processed within 3-7 working days.
+
+[ID] 2. PROSES
+Buka aduan melalui Pusat Bantuan. Sertakan bukti. Diproses dalam 3-7 hari kerja.
+
+[ZH] 2. 流程
+通过帮助中心提出争议。附上证据。3-7个工作日内处理。
+
+[AR] 2. العملية
+افتح نزاعًا عبر مركز المساعدة. أرفق الدليل. يتم المعالجة في غضون 3-7 أيام عمل.
+
+================================
+
+[MS] 3. KAEDAH
+Refund dibuat melalui Pi Network ke wallet asal pembeli.
+
+[EN] 3. METHOD
+Refund is made via Pi Network to buyer's original wallet.
+
+[ID] 3. METODE
+Refund dilakukan melalui Pi Network ke wallet asli pembeli.
+
+[ZH] 3. 方式
+退款通过Pi Network退回到买家的原始钱包。
+
+[AR] 3. الطريقة
+يتم الاسترداد عبر شبكة باي إلى المحفظة الأصلية للمشتري.
+
+================================
+
+[MS] Kemaskini: 12 Mei 2026
+[EN] Updated: 12 May 2026

@@ -1,4 +1,4 @@
-// 🔧-utiliti.js – Fungsi bantuan
+// utiliti.js – Fungsi bantuan
 function formatPi(jumlah) {
     return parseFloat(jumlah).toFixed(7) + " Pi";
 }

@@ -26,7 +26,7 @@ body {
 }
 
 .subtitle {
-    color: #ccb870;
+    color: #FFD700;
     font-size: 0.9em;
     margin-top: 5px;
 }
@@ -69,8 +69,8 @@ body {
 }
 
 .product-card {
-    background: #111;
-    border: 1px solid #2a2a2a;
+    background: #0d0d0d;
+    border: 1px solid #FFD700;
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 10px;
@@ -78,7 +78,8 @@ body {
 }
 
 .product-card:hover {
-    border-color: #FFD700;
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255,215,0,0.3);
 }
 
 .free-banner {
@@ -88,8 +89,9 @@ body {
     font-size: 0.7em;
     font-weight: bold;
     margin-bottom: 8px;
-    background: #333;
-    color: #fff;
+    background: #1a1a1a;
+    color: #FFD700;
+    border: 1px solid #FFD700;
 }
 
 .product-name {
@@ -113,11 +115,11 @@ body {
 #stickyStatus {
     text-align: center;
     padding: 10px;
-    background: #111;
-    border-top: 1px solid #2a2a2a;
-    border-bottom: 1px solid #2a2a2a;
+    background: #0d0d0d;
+    border-top: 1px solid #FFD700;
+    border-bottom: 1px solid #FFD700;
     font-size: 0.85em;
-    color: #ccc;
+    color: #FFD700;
 }
 
 .golden-btn {
@@ -126,7 +128,7 @@ body {
     max-width: 400px;
     margin: 10px auto;
     padding: 14px;
-    background: linear-gradient(180deg, #FFD700, #cc9900);
+    background: linear-gradient(180deg, #FFD700, #b8860b);
     color: #000;
     border: none;
     border-radius: 8px;
@@ -135,8 +137,9 @@ body {
 }
 
 .golden-btn:disabled {
-    background: #333;
-    color: #666;
+    background: #1a1a1a;
+    color: #444;
+    border: 1px solid #333;
 }
 
 .red-btn {
@@ -147,23 +150,24 @@ body {
     padding: 14px;
     background: #8B0000;
     color: #fff;
-    border: none;
+    border: 1px solid #FFD700;
     border-radius: 8px;
     font-weight: bold;
     font-size: 1em;
 }
 
 .red-btn:disabled {
-    background: #333;
-    color: #666;
+    background: #1a1a1a;
+    color: #444;
+    border: 1px solid #333;
 }
 
 .sop-box {
     max-width: 600px;
     margin: 20px auto;
     padding: 15px;
-    background: #111;
-    border: 1px solid #2a2a2a;
+    background: #0d0d0d;
+    border: 1px solid #FFD700;
     border-radius: 10px;
     font-size: 0.8em;
 }
@@ -183,7 +187,7 @@ body {
     display: block;
     margin: 10px auto 0;
     padding: 8px 20px;
-    background: #222;
+    background: #1a1a1a;
     color: #FFD700;
     border: 1px solid #FFD700;
     border-radius: 20px;
@@ -197,12 +201,12 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.95);
     z-index: 999;
 }
 
 .modal-content {
-    background: #111;
+    background: #0d0d0d;
     border: 2px solid #FFD700;
     border-radius: 12px;
     padding: 25px;
@@ -211,14 +215,28 @@ body {
     color: #f0e6d3;
 }
 
+.modal-content h2 {
+    color: #FFD700;
+}
+
+.modal-content p {
+    color: #ccc;
+}
+
 .footer-frame {
     text-align: center;
     padding: 20px 15px;
     color: #cc3333;
     font-size: 0.8em;
     font-weight: bold;
-    border-top: 1px solid #2a2a2a;
+    border-top: 2px solid #FFD700;
     margin-top: 20px;
+    animation: kelip 1s infinite;
+}
+
+@keyframes kelip {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 footer {

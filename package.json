@@ -2,7 +2,7 @@
   "name": "mb-legacy-store",
   "version": "2.0.0",
   "description": "Platform Pi Commerce Malaysia – Selamat, Stabil, Dipercayai",
-  "main": "🏠-index.html",
+  "main": "index.html",
   "scripts": {
     "start": "vercel dev"
   },

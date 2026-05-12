@@ -1,4 +1,4 @@
-// 🌍-global.js – Pembolehubah & fungsi kongsi
+// global.js – Pembolehubah & fungsi kongsi
 let currentUser = null;
 let pendingIncompleteCount = 0;
 

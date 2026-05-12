@@ -1,4 +1,4 @@
-// 🔐-akaun.js – Login & daftar
+// akaun.js – Login & daftar
 async function doLogin() {
     updateStatus("🔄 Menyambung...");
     try {

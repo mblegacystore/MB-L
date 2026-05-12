@@ -1,4 +1,4 @@
-// 📋-pesanan-status.js – Kemaskini status pesanan
+// pesanan-status.js – Kemaskini status pesanan
 export default async function handler(req, res) {
     const { pesanan_id, status } = req.body || {};
     if (!pesanan_id || !status) return res.status(400).json({ error: "Data tak lengkap" });

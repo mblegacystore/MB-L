@@ -1,4 +1,4 @@
-// 👍-bayar-selesai.js – Selesaikan pembayaran
+// bayar-selesai.js – Selesaikan pembayaran
 export default async function handler(req, res) {
     const { paymentId, txid } = req.body || {};
     if (!paymentId || !txid) return res.status(400).json({ error: "paymentId/txid missing" });

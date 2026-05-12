@@ -1,4 +1,3 @@
-// fungsi/bahasa.js – 5 Bahasa (MS, EN, ID, ZH, AR)
 const LANG = {
     ms: {
         subtitle: "Pi Anda, Legasi Anda.",
@@ -115,4 +114,4 @@ function switchLanguage(lang) {
     document.getElementById('footer-text').textContent = t.footer;
     document.querySelectorAll('.lang-selector button').forEach(function(b){ b.classList.remove('active'); });
     document.getElementById('lang-'+lang).classList.add('active');
-        }
+}

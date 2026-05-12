@@ -64,6 +64,18 @@
                 <span class="product-price">1.0000000 Pi</span>
             </div>
         </div>
+
+        <hr class="gold-divider">
+
+        <!-- PIONEER REWARD (Payout) -->
+        <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
+            <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
+            <div class="product-info">
+                <h3>CLAIM TESTNET PI (A2U)</h3>
+                <p>Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
+                <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
+            </div>
+        </div>
     </div>
 
     <!-- STATUS BAR -->
@@ -72,7 +84,7 @@
     <!-- BUTTONS -->
     <button id="btn-login" class="golden-btn" onclick="doLogin()">🔐 CONNECT ACCOUNT</button>
     <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('command',1)">💰 PAY 1.0 PI</button>
-    <button id="btn-payout" class="golden-btn" disabled onclick="location.href='halaman/payout.html'">🎁 PRODUCT PAYOUT</button>
+    <button id="btn-payout" class="golden-btn" disabled onclick="requestPayout()">🎁 CLAIM PAYOUT</button>
 
     <!-- MODAL -->
     <div id="productModal" class="modal">
@@ -101,4 +113,4 @@
         switchLanguage('en');
     </script>
 </body>
-</html>
+        </html>

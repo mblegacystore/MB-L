@@ -1,0 +1,38 @@
+POLISI PRIVASI MB LEGACY STORE
+PRIVACY POLICY MB LEGACY STORE
+====================================
+
+[MS] 1. DATA YANG DIKUMPUL
+Kami mengumpul nama pengguna Pi, alamat wallet, dan sejarah pembelian.
+
+[EN] 1. DATA COLLECTED
+We collect Pi username, wallet address, and purchase history.
+
+====================================
+
+[MS] 2. PENGGUNAAN DATA
+Data digunakan untuk memproses pesanan, penilaian, dan komunikasi berkaitan.
+
+[EN] 2. DATA USAGE
+Data is used to process orders, ratings, and related communication.
+
+====================================
+
+[MS] 3. PERKONGSIAN DATA
+Kami TIDAK menjual atau berkongsi data dengan pihak ketiga.
+
+[EN] 3. DATA SHARING
+We do NOT sell or share data with third parties.
+
+====================================
+
+[MS] 4. KESELAMATAN
+Data disimpan dengan langkah keselamatan standard industri.
+
+[EN] 4. SECURITY
+Data is stored with industry-standard security measures.
+
+====================================
+
+[MS] Kemaskini: 12 Mei 2026
+[EN] Updated: 12 May 2026

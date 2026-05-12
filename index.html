@@ -9,15 +9,13 @@
 </head>
 <body>
 
-    <!-- HEADER -->
     <div class="title-frame">
         <h1>MB LEGACY STORE</h1>
-        <p class="subtitle">YOUR PI, YOUR LEGACY.</p>
+        <p class="subtitle">Your Pi, Your Legacy.</p>
     </div>
 
     <hr class="gold-divider">
 
-    <!-- BAHASA -->
     <div class="lang-selector">
         <button id="lang-ms" class="active" onclick="switchLanguage('ms')">MS</button>
         <button id="lang-en" onclick="switchLanguage('en')">EN</button>
@@ -35,34 +33,35 @@
         <h2>✦ THE VAULT ✦</h2>
 
         <div class="product-card" onclick="showFreeContent()">
+            <div class="product-img-placeholder">I</div>
             <div class="free-banner">🆓 FREE EDITION</div>
             <div class="product-info">
                 <h3 id="title-sentinel">THE PI SENTINEL DOSSIER</h3>
-                <p id="desc-sentinel">A FREE strategic market intelligence primer.</p>
-                <span class="product-price">FREE</span>
+                <p id="desc-sentinel">A FREE strategic market intelligence primer for the modern Pioneer.</p>
+                <span class="product-price" style="color:#27ae60;">FREE</span>
             </div>
         </div>
 
         <div class="product-card" onclick="buyProduct('echelon',1)">
-            <div class="product-img-placeholder">🔴</div>
+            <div class="product-img-placeholder">II</div>
             <div class="product-info">
                 <h3 id="title-echelon">THE ECHELON BRIEFING PACK</h3>
-                <p id="desc-echelon">An advanced education module.</p>
+                <p id="desc-echelon">An advanced education module on Pi, AI, RWA, and global shifts.</p>
                 <span class="product-price">1.0000000 Pi</span>
             </div>
         </div>
 
         <div class="product-card" onclick="buyProduct('command',5)">
-            <div class="product-img-placeholder">🔴</div>
+            <div class="product-img-placeholder">III</div>
             <div class="product-info">
                 <h3 id="title-command">THE COMMAND CENTER SUITE</h3>
-                <p id="desc-command">A professional toolset.</p>
+                <p id="desc-command">A professional toolset for building a global brand.</p>
                 <span class="product-price">5.0000000 Pi</span>
             </div>
         </div>
     </div>
 
-    <!-- PIONEER REWARD (Payout) - DI BAWAH VAULT, DI ATAS STATUS -->
+    <!-- PIONEER REWARD -->
     <div class="treasury-section">
         <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
             <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
@@ -74,25 +73,21 @@
         </div>
     </div>
 
-    <!-- STATUS BAR -->
-    <div id="stickyStatus"><p id="stSticky">Waiting for Connection...</p></div>
+    <div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
 
-    <!-- BUTTONS -->
     <button id="btn-login" class="golden-btn" onclick="doLogin()">CONNECT ACCOUNT</button>
-    <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0000000 PI</button>
-    <button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5.0000000 PI</button>
+    <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0 PI</button>
+    <button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5 PI</button>
 
-    <!-- MODAL -->
     <div id="productModal" class="modal">
         <div class="modal-content" id="modalBody"></div>
     </div>
 
-    <!-- SECURITY FOOTER -->
     <div class="footer-frame">
-        <p>MB LEGACY STORE WILL NEVER ASK FOR YOUR WALLET PASSPHRASE!</p>
+        <p>SECURITY NOTICE: MB Legacy Store will NEVER ask for your wallet passphrase. All transactions are conducted securely via the Pi Browser official SDK.</p>
     </div>
 
-    <footer>© 2026 MB LEGACY STORE</footer>
+    <footer>© 2026 MB Legacy Store. All Rights Reserved.</footer>
 
     <script src="fungsi/global.js"></script>
     <script src="fungsi/akaun.js"></script>

@@ -1,6 +1,6 @@
-// 💰-transaksi.js – Urus pembayaran
+// transaksi.js – Urus pembayaran
 async function onIncompletePaymentFound(payment) {
-    updateStatus("⏳ Menyelesaikan pembayaran tertunda...");
+    updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
     try {
         let res = await fetch("/api/cuci.js", {
@@ -11,16 +11,16 @@ async function onIncompletePaymentFound(payment) {
         let data = await res.json();
         pendingIncompleteCount--;
         if (data.success) {
-            updateStatus("✅ Selesai");
+            updateStatus("Selesai");
             tryEnablePaymentButtons();
             return { status: "COMPLETED" };
         }
-        updateStatus("⚠️ Dibersihkan");
+        updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
     } catch (e) {
         pendingIncompleteCount--;
-        updateStatus("⚠️ Dibersihkan");
+        updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
     }
@@ -28,7 +28,7 @@ async function onIncompletePaymentFound(payment) {
 
 function buyProduct(key, amount) {
     let total = parseFloat(amount).toFixed(7);
-    updateStatus("💰 Membayar " + total + " Pi...");
+    updateStatus("Membayar " + total + " Pi...");
     Pi.createPayment(
         { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
         {
@@ -46,7 +46,7 @@ function buyProduct(key, amount) {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid })
                 }).then(function() {
-                    updateStatus("✅ Berjaya!");
+                    updateStatus("Berjaya!");
                     if (key === "echelon") {
                         currentUser.boughtEchelon = true;
                         showEchelonReport();
@@ -60,11 +60,11 @@ function buyProduct(key, amount) {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ paymentId: id, txid: txid })
                     });
-                    updateStatus("✅ Pulih!");
+                    updateStatus("Pulih!");
                 });
             },
-            onCancel: function() { updateStatus("❌ Dibatalkan"); },
-            onError: function(e) { updateStatus("❌ Ralat: " + e.message); }
+            onCancel: function() { updateStatus("Dibatalkan"); },
+            onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
 }
@@ -72,7 +72,7 @@ function buyProduct(key, amount) {
 async function requestPayout() {
     if (!currentUser) return;
     let wallet = currentUser.wallet_address || null;
-    updateStatus("💸 Mencipta A2U...");
+    updateStatus("Mencipta A2U...");
     Pi.createPayment(
         { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
         {
@@ -90,18 +90,18 @@ async function requestPayout() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid, action: "complete", wallet_address: wallet })
                 }).then(function() {
-                    updateStatus("✅ 0.1 Pi dihantar!");
+                    updateStatus("0.1 Pi dihantar!");
                 }).catch(async function() {
                     await fetch("/api/cuci.js", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ paymentId: id, txid: txid })
                     });
-                    updateStatus("✅ Pulih!");
+                    updateStatus("Pulih!");
                 });
             },
-            onCancel: function() { updateStatus("❌ Dibatalkan"); },
-            onError: function(e) { updateStatus("❌ Ralat: " + e.message); }
+            onCancel: function() { updateStatus("Dibatalkan"); },
+            onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
 }

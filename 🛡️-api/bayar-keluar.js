@@ -1,4 +1,4 @@
-// 💸-bayar-keluar.js – Hantar Pi kepada pengguna (A2U)
+// bayar-keluar.js – Hantar Pi kepada pengguna (A2U)
 export default async function handler(req, res) {
     const { paymentId, action, txid } = req.body || {};
     if (!paymentId || !action) return res.status(400).json({ error: "Data tak lengkap" });

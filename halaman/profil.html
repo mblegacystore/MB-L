@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,22 +7,39 @@
     <link rel="stylesheet" href="../css/gaya-utama.css">
 </head>
 <body>
-    <div class="title-frame">
-        <h1>PROFIL</h1>
-    </div>
 
-    <div class="treasury-section">
-        <div class="product-card">
-            <p class="product-name">Nama Pengguna</p>
-            <p class="product-desc" id="nama-pengguna">-</p>
-        </div>
-        <div class="product-card">
-            <p class="product-name">Alamat Wallet</p>
-            <p class="product-desc" id="alamat-wallet">-</p>
-        </div>
-    </div>
+<div class="title-frame">
+    <h1>PROFIL</h1>
+</div>
 
-    <a href="../index.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;">Kembali</a>
-    <footer>© 2026 MB LEGACY STORE</footer>
+<hr class="gold-divider">
+
+<div class="lang-selector">
+    <button id="lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
+    <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 EN</button>
+    <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
+    <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+    <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+</div>
+
+<div class="treasury-section">
+    <div class="product-card">
+        <p class="product-name">Nama Pengguna</p>
+        <p class="product-desc" id="nama-pengguna">-</p>
+    </div>
+    <div class="product-card">
+        <p class="product-name">Alamat Wallet</p>
+        <p class="product-desc" id="alamat-wallet">-</p>
+    </div>
+</div>
+
+<a href="../index.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;">Kembali</a>
+<footer>© 2026 MB LEGACY STORE</footer>
+
+<script src="../fungsi/bahasa.js"></script>
+<script>
+    const saved = localStorage.getItem('mb-legacy-lang') || 'en';
+    switchLanguage(saved);
+</script>
 </body>
 </html>

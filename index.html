@@ -3,148 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MB LEGACY STORE | Pi Commerce Malaysia</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <link rel="stylesheet" href="css/gaya-utama.css">
+    <title>Polisi Privasi – MB LEGACY STORE</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #f0e6d3;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px 20px;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        h1 {
+            color: #FFD700;
+            text-align: center;
+            border-bottom: 1px solid #FFD700;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #FFD700;
+            margin-top: 25px;
+        }
+        p, li {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        hr {
+            border-color: #333;
+            margin: 30px 0;
+        }
+    </style>
 </head>
 <body>
 
-<div class="title-frame">
-    <h1>MB LEGACY STORE</h1>
-    <p class="subtitle" id="subtitle">Pi Anda, Legasi Anda.</p>
-</div>
+    <h1>POLISI PRIVASI<br><small style="font-size:0.6rem;color:#999;">PRIVACY POLICY</small></h1>
 
-<hr class="gold-divider">
+    <p><strong>Bahasa Melayu</strong></p>
 
-<div class="lang-selector">
-    <button id="lang-ms" class="active" onclick="switchLanguage('ms')">🇲🇾 MS</button>
-    <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 EN</button>
-    <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
-    <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
-    <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
-</div>
+    <h2>1. Data Yang Dikumpul</h2>
+    <p>Kami mengumpul maklumat berikut semasa pendaftaran dan penggunaan aplikasi:</p>
+    <ul>
+        <li>Nama pengguna Pi (<em>username</em>)</li>
+        <li>Alamat dompet Pi (<em>wallet address</em>)</li>
+        <li>Sejarah pembelian dan transaksi</li>
+    </ul>
 
-<div class="trust-badge">
-    <p id="trust-text">DILINDUNGI OLEH PI NETWORK</p>
-</div>
+    <h2>2. Penggunaan Data</h2>
+    <p>Data yang dikumpul digunakan untuk:</p>
+    <ul>
+        <li>Memproses pesanan dan pembayaran</li>
+        <li>Memberikan sokongan pelanggan</li>
+        <li>Menambah baik pengalaman pengguna</li>
+        <li>Mematuhi keperluan undang-undang</li>
+    </ul>
 
-<!-- TABS -->
-<div style="display: flex; gap: 8px; margin-bottom: 15px; max-width: 400px; width: 100%;">
-    <button id="tab-digital" onclick="switchTab('digital')" style="flex:1; padding: 10px; background: #FFD700; color: #000; border: 1px solid #FFD700; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">📚 Digital Vault</button>
-    <button id="tab-merchant" onclick="switchTab('merchant')" style="flex:1; padding: 10px; background: transparent; color: #666; border: 1px solid #666; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">🛡️ Merchant Vault</button>
-</div>
+    <h2>3. Perkongsian Data</h2>
+    <p><strong>Kami TIDAK menjual, menyewa, atau berkongsi data peribadi anda dengan mana-mana pihak ketiga.</strong> Data hanya digunakan dalam ekosistem MB LEGACY STORE untuk tujuan transaksi dan sokongan.</p>
 
-<!-- MERCHANT VAULT -->
-<div id="merchant-content" style="display:none; max-width:400px; width:100%; text-align:center; margin-bottom:20px;">
-    <div style="border:2px solid #FFD700; padding:30px 20px; background:rgba(255,215,0,0.03); border-radius:4px;">
-        <h3 style="color:#FFD700;">🛡️ THE MERCHANT VAULT</h3>
-        <p style="color:#ccc;">Exclusive products from trusted, verified Pi merchants.</p>
-        <div style="background:rgba(255,215,0,0.1); border:1px solid #FFD700; padding:12px 25px; display:inline-block; margin:10px 0;">
-            <span style="color:#FFD700; font-weight:bold;">🚀 COMING SOON</span>
-        </div>
-        <div style="text-align:left; display:inline-block; margin-top:15px;">
-            <p style="color:#999; font-size:0.7rem;">✦ Invitation-only for verified sellers</p>
-            <p style="color:#999; font-size:0.7rem;">✦ Physical goods & digital assets</p>
-            <p style="color:#999; font-size:0.7rem;">✦ Secured by Pi SDK payments</p>
-            <p style="color:#999; font-size:0.7rem;">✦ Built on trust & transparency</p>
-        </div>
-        <p style="color:#555; font-size:0.65rem; margin-top:15px;">Powered by Pi Network • MB LEGACY STORE</p>
-    </div>
-</div>
+    <h2>4. Keselamatan</h2>
+    <p>Kami melaksanakan langkah keselamatan standard industri untuk melindungi data anda. Semua transaksi direkodkan di rantaian blok Pi dan tidak boleh diubah.</p>
 
-<!-- DIGITAL VAULT -->
-<div class="treasury-section" id="digital-content">
-    <h2>✦ THE VAULT ✦</h2>
+    <hr>
 
-    <div class="product-card" onclick="showFreeContent()">
-        <div class="product-img-placeholder">I</div>
-        <div class="free-banner">🆓 FREE EDITION</div>
-        <div class="product-info">
-            <h3 id="title-sentinel">DOSSIER PI SENTINEL</h3>
-            <p id="desc-sentinel">Panduan perisikan pasaran strategik PERCUMA.</p>
-            <span class="product-price" style="color:#27ae60;">PERCUMA</span>
-        </div>
-    </div>
+    <p><strong>English</strong></p>
 
-    <div class="product-card" onclick="buyProduct('echelon',1)">
-        <div class="product-img-placeholder">II</div>
-        <div class="product-info">
-            <h3 id="title-echelon">PEK TAKLIMAT ECHELON</h3>
-            <p id="desc-echelon">Modul pendidikan lanjutan Pi, AI, RWA.</p>
-            <span class="product-price">1.0000000 Pi</span>
-        </div>
-    </div>
+    <h2>1. Data Collected</h2>
+    <p>We collect the following information during registration and app usage:</p>
+    <ul>
+        <li>Pi username</li>
+        <li>Pi wallet address</li>
+        <li>Purchase and transaction history</li>
+    </ul>
 
-    <div class="product-card" onclick="buyProduct('command',5)">
-        <div class="product-img-placeholder">III</div>
-        <div class="product-info">
-            <h3 id="title-command">SUIT PUSAT KAWALAN</h3>
-            <p id="desc-command">Set alat profesional bina jenama global.</p>
-            <span class="product-price">5.0000000 Pi</span>
-        </div>
-    </div>
-</div>
+    <h2>2. Data Usage</h2>
+    <p>Collected data is used for:</p>
+    <ul>
+        <li>Processing orders and payments</li>
+        <li>Providing customer support</li>
+        <li>Improving user experience</li>
+        <li>Complying with legal requirements</li>
+    </ul>
 
-<!-- PIONEER REWARD -->
-<div class="treasury-section" id="payout-content">
-    <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
-        <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
-        <div class="product-info">
-            <h3 id="title-payout">TUNTUT TESTNET PI (A2U)</h3>
-            <p id="desc-payout">Terima 0.1 Testnet Pi terus ke dompet anda.</p>
-            <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
-        </div>
-    </div>
-</div>
+    <h2>3. Data Sharing</h2>
+    <p><strong>We DO NOT sell, rent, or share your personal data with any third parties.</strong> Data is only used within the MB LEGACY STORE ecosystem for transaction and support purposes.</p>
 
-<div id="stickyStatus"><p id="stSticky">Bilik Kebal Selamat. Sistem Sedia.</p></div>
+    <h2>4. Security</h2>
+    <p>We implement industry-standard security measures to protect your data. All transactions are recorded on the Pi blockchain and are immutable.</p>
 
-<button id="btn-login" class="golden-btn" onclick="doLogin()">SAMBUNG AKAUN</button>
-<button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">BAYAR 1.0 PI</button>
-<button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">BAYAR 5 PI</button>
+    <hr>
+    <p style="text-align:center;color:#555;">Kemaskini / Updated: Mei 2026</p>
 
-<!-- MODAL -->
-<div id="productModal" class="modal">
-    <div class="modal-content" id="modalBody"></div>
-</div>
-
-<div class="footer-frame">
-    <p id="security-text">NOTIS KESELAMATAN: MB Legacy Store TIDAK AKAN PERNAH meminta frasa laluan dompet anda.</p>
-</div>
-
-<footer id="footer-text">© 2026 MB Legacy Store. Hak Cipta Terpelihara.</footer>
-
-<script src="fungsi/global.js"></script>
-<script src="fungsi/akaun.js"></script>
-<script src="fungsi/bahasa.js"></script>
-<script src="fungsi/modal.js"></script>
-<script src="fungsi/transaksi.js"></script>
-<script>
-    Pi.init({ version: "2.0", sandbox: true });
-    switchLanguage('ms');
-
-    window.switchTab = function(tab) {
-        var d = document.getElementById('digital-content');
-        var p = document.getElementById('payout-content');
-        var m = document.getElementById('merchant-content');
-        var s = document.getElementById('stickyStatus');
-        var l = document.getElementById('btn-login');
-        var b1 = document.getElementById('btn-pay1');
-        var b10 = document.getElementById('btn-pay10');
-        var td = document.getElementById('tab-digital');
-        var tm = document.getElementById('tab-merchant');
-        if (tab === 'digital') {
-            d.style.display='block'; p.style.display='block'; m.style.display='none';
-            s.style.display='block'; l.style.display='block'; b1.style.display='block'; b10.style.display='block';
-            td.style.background='#FFD700'; td.style.color='#000';
-            tm.style.background='transparent'; tm.style.color='#666';
-        } else {
-            d.style.display='none'; p.style.display='none'; m.style.display='block';
-            s.style.display='none'; l.style.display='none'; b1.style.display='none'; b10.style.display='none';
-            tm.style.background='#FFD700'; tm.style.color='#000';
-            td.style.background='transparent'; td.style.color='#666';
-        }
-    };
-</script>
 </body>
 </html>

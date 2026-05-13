@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,14 @@
 </div>
 
 <hr class="gold-divider">
+
+<div class="lang-selector">
+    <button id="lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
+    <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 EN</button>
+    <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
+    <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+    <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+</div>
 
 <div class="treasury-section">
     <div class="product-card" onclick="alert('Fungsi tambah produk akan datang.')">
@@ -60,5 +68,10 @@
 
 <footer>© 2026 MB LEGACY STORE</footer>
 
+<script src="../fungsi/bahasa.js"></script>
+<script>
+    const saved = localStorage.getItem('mb-legacy-lang') || 'en';
+    switchLanguage(saved);
+</script>
 </body>
 </html>

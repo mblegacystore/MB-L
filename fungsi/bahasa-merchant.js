@@ -1,10 +1,8 @@
-// TAMBAHAN: Pastikan fungsi boleh dipanggil dari HTML
 window.switchDashboardLanguage = function(lang) {
     if (lang === 'ms' || lang === 'en') {
         localStorage.setItem('mb-legacy-lang', lang);
         applyDashboardLanguage();
         
-        // Kemaskini butang aktif
         var buttons = document.querySelectorAll('.lang-selector button');
         buttons.forEach(function(b) { b.classList.remove('active'); });
         var activeBtn = document.querySelector('.lang-selector button[onclick*="' + lang + '"]');
@@ -120,7 +118,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var savedLang = localStorage.getItem('mb-legacy-lang') || 'en';
     applyDashboardLanguage();
     
-    // Kemaskini butang aktif
     var buttons = document.querySelectorAll('.lang-selector button');
     buttons.forEach(function(b) { b.classList.remove('active'); });
     var activeBtn = document.querySelector('.lang-selector button[onclick*="' + savedLang + '"]');

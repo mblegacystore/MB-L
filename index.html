@@ -3,81 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Penjual – MB LEGACY STORE</title>
-    <link rel="stylesheet" href="../css/gaya-utama.css">
+    <title>MB LEGACY STORE | Pi Commerce Malaysia</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <link rel="stylesheet" href="css/gaya-utama.css">
 </head>
 <body>
 
 <div class="title-frame">
-    <h1>DASHBOARD PENJUAL</h1>
-    <p class="subtitle">Urus Kedai Anda</p>
+    <h1>MB LEGACY STORE</h1>
+    <p class="subtitle" id="subtitle">Your Pi, Your Legacy.</p>
 </div>
 
 <hr class="gold-divider">
 
 <div class="lang-selector">
-    <button id="lang-ms2" onclick="switchLanguage('ms')">🇲🇾 MS</button>
-    <button id="lang-en2" onclick="switchLanguage('en')">🇬🇧 EN</button>
-    <button id="lang-id2" onclick="switchLanguage('id')">🇮🇩 ID</button>
-    <button id="lang-zh2" onclick="switchLanguage('zh')">🇨🇳 中文</button>
-    <button id="lang-ar2" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+    <button id="lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
+    <button id="lang-en" class="active" onclick="switchLanguage('en')">🇬🇧 EN</button>
+    <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
+    <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+    <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
 </div>
 
-<div class="treasury-section">
-    <div class="product-card" onclick="alert('Fungsi tambah produk akan datang.')">
-        <div class="product-info">
-            <h3>📦 Tambah Produk Baru</h3>
-            <p>Senaraikan produk baharu untuk dijual di MB LEGACY STORE.</p>
-        </div>
-    </div>
+<div class="trust-badge">
+    <p id="trust-text">PROTECTED BY PI NETWORK</p>
+</div>
 
-    <div class="product-card" onclick="alert('Senarai produk akan datang.')">
-        <div class="product-info">
-            <h3>📋 Produk Saya</h3>
-            <p>Lihat dan urus semua produk yang telah anda senaraikan.</p>
-        </div>
-    </div>
+<!-- TABS -->
+<div style="display: flex; gap: 8px; margin-bottom: 15px; max-width: 400px; width: 100%;">
+    <button id="tab-digital" onclick="switchTab('digital')" style="flex:1; padding: 10px; background: #FFD700; color: #000; border: 1px solid #FFD700; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">📚 Digital Vault</button>
+    <button id="tab-merchant" onclick="switchTab('merchant')" style="flex:1; padding: 10px; background: transparent; color: #666; border: 1px solid #666; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">🛡️ Merchant Vault</button>
+</div>
 
-    <div class="product-card" onclick="alert('Pesanan akan datang.')">
-        <div class="product-info">
-            <h3>🛒 Pesanan Diterima</h3>
-            <p>Lihat dan proses pesanan daripada pelanggan.</p>
+<!-- MERCHANT VAULT -->
+<div id="merchant-content" style="display:none; max-width:400px; width:100%; text-align:center; margin-bottom:20px;">
+    <div style="border:2px solid #FFD700; padding:30px 20px; background:rgba(255,215,0,0.03); border-radius:4px;">
+        <h3 style="color:#FFD700;">🛡️ THE MERCHANT VAULT</h3>
+        <p style="color:#ccc;">Exclusive products from trusted, verified Pi merchants.</p>
+        <div style="background:rgba(255,215,0,0.1); border:1px solid #FFD700; padding:12px 25px; display:inline-block; margin:10px 0;">
+            <span style="color:#FFD700; font-weight:bold;">🚀 COMING SOON</span>
         </div>
-    </div>
-
-    <div class="product-card" onclick="alert('Pendapatan akan datang.')">
-        <div class="product-info">
-            <h3>💰 Pendapatan</h3>
-            <p>Lihat jumlah Pi yang telah anda terima.</p>
+        <div style="text-align:left; display:inline-block; margin-top:15px;">
+            <p style="color:#999; font-size:0.7rem;">✦ Invitation-only for verified sellers</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Physical goods & digital assets</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Secured by Pi SDK payments</p>
+            <p style="color:#999; font-size:0.7rem;">✦ Built on trust & transparency</p>
         </div>
-    </div>
-
-    <div class="product-card" onclick="alert('Aduan akan datang.')">
-        <div class="product-info">
-            <h3>🚨 Aduan Pelanggan</h3>
-            <p>Lihat dan balas aduan daripada pelanggan.</p>
-        </div>
+        <p style="color:#555; font-size:0.65rem; margin-top:15px;">Powered by Pi Network • MB LEGACY STORE</p>
+        <a href="halaman/dashboard-penjual.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;margin-top:10px;">🔐 LOG MASUK PENJUAL</a>
+        <a href="halaman/dashboard-pembeli.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;margin-top:5px;">🛡️ DASHBOARD PEMBELI</a>
     </div>
 </div>
 
-<a href="../index.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;">⬅ KEMBALI KE KEDAI</a>
+<!-- DIGITAL VAULT -->
+<div class="treasury-section" id="digital-content">
+    <h2>✦ THE VAULT ✦</h2>
+
+    <div class="product-card" onclick="showFreeContent()">
+        <div class="product-img-placeholder">I</div>
+        <div class="free-banner">🆓 FREE EDITION</div>
+        <div class="product-info">
+            <h3 id="title-sentinel">THE PI SENTINEL DOSSIER</h3>
+            <p id="desc-sentinel">A FREE strategic market intelligence primer for the modern Pioneer.</p>
+            <span class="product-price" style="color:#27ae60;">FREE</span>
+        </div>
+    </div>
+
+    <div class="product-card" onclick="buyProduct('echelon',1)">
+        <div class="product-img-placeholder">II</div>
+        <div class="product-info">
+            <h3 id="title-echelon">THE ECHELON BRIEFING PACK</h3>
+            <p id="desc-echelon">An advanced education module on Pi, AI, RWA, and global shifts.</p>
+            <span class="product-price">1.0000000 Pi</span>
+        </div>
+    </div>
+
+    <div class="product-card" onclick="buyProduct('command',5)">
+        <div class="product-img-placeholder">III</div>
+        <div class="product-info">
+            <h3 id="title-command">THE COMMAND CENTER SUITE</h3>
+            <p id="desc-command">A professional toolset for building a global brand.</p>
+            <span class="product-price">5.0000000 Pi</span>
+        </div>
+    </div>
+</div>
+
+<!-- PIONEER REWARD -->
+<div class="treasury-section" id="payout-content">
+    <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
+        <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
+        <div class="product-info">
+            <h3 id="title-payout">CLAIM TESTNET PI (A2U)</h3>
+            <p id="desc-payout">Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
+            <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
+        </div>
+    </div>
+</div>
+
+<div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
+
+<button id="btn-login" class="golden-btn" onclick="doLogin()">CONNECT ACCOUNT</button>
+<button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0 PI</button>
+<button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5 PI</button>
+
+<!-- MODAL -->
+<div id="productModal" class="modal">
+    <div class="modal-content" id="modalBody"></div>
+</div>
 
 <div class="footer-frame">
-    <p>MB LEGACY STORE TIDAK AKAN PERNAH MEMINTA FRASA LALUAN WALLET ANDA!</p>
+    <p id="security-text">SECURITY NOTICE: MB Legacy Store will NEVER ask for your wallet passphrase.</p>
 </div>
 
-<footer>© 2026 MB LEGACY STORE</footer>
+<footer id="footer-text">© 2026 MB Legacy Store. All Rights Reserved.</footer>
 
-<script src="../fungsi/bahasa.js"></script>
+<script src="fungsi/global.js"></script>
+<script src="fungsi/akaun.js"></script>
+<script src="fungsi/bahasa.js"></script>
+<script src="fungsi/modal.js"></script>
+<script src="fungsi/transaksi.js"></script>
 <script>
-    var saved = localStorage.getItem('mb-legacy-lang') || 'en';
+    Pi.init({ version: "2.0", sandbox: true });
+    
+    var savedLang = localStorage.getItem('mb-legacy-lang') || 'en';
     if (window.switchLanguage) {
-        switchLanguage(saved);
-    } else {
-        window.addEventListener('load', function() {
-            if (window.switchLanguage) switchLanguage(saved);
-        });
+        switchLanguage(savedLang);
     }
+
+    window.switchTab = function(tab) {
+        var d = document.getElementById('digital-content');
+        var p = document.getElementById('payout-content');
+        var m = document.getElementById('merchant-content');
+        var s = document.getElementById('stickyStatus');
+        var l = document.getElementById('btn-login');
+        var b1 = document.getElementById('btn-pay1');
+        var b10 = document.getElementById('btn-pay10');
+        var td = document.getElementById('tab-digital');
+        var tm = document.getElementById('tab-merchant');
+        if (tab === 'digital') {
+            d.style.display='block'; p.style.display='block'; m.style.display='none';
+            s.style.display='block'; l.style.display='block'; b1.style.display='block'; b10.style.display='block';
+            td.style.background='#FFD700'; td.style.color='#000';
+            tm.style.background='transparent'; tm.style.color='#666';
+        } else {
+            d.style.display='none'; p.style.display='none'; m.style.display='block';
+            s.style.display='none'; l.style.display='none'; b1.style.display='none'; b10.style.display='none';
+            tm.style.background='#FFD700'; tm.style.color='#000';
+            td.style.background='transparent'; td.style.color='#666';
+        }
+    };
 </script>
 </body>
 </html>

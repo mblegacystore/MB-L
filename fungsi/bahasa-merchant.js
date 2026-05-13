@@ -1,4 +1,4 @@
-// bahasa-dashboard.js – Terjemahan untuk Dashboard Penjual & Pembeli
+// bahasa-merchant.js – Terjemahan untuk Dashboard Penjual & Pembeli
 const DASH_LANG = {
     ms: {
         penjual_tajuk: "DASHBOARD PENJUAL",

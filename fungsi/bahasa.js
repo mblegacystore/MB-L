@@ -93,32 +93,41 @@ const LANG = {
 
 let currentLang = 'en';
 
+function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
 function switchLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('mb-legacy-lang', lang);
-    const t = LANG[lang] || LANG.en;
-    document.getElementById('subtitle').textContent = t.subtitle;
-    document.getElementById('trust-text').textContent = t.trust;
-    document.getElementById('title-sentinel').textContent = t.sentinel;
-    document.getElementById('desc-sentinel').textContent = t.sentinelDesc;
-    document.getElementById('title-echelon').textContent = t.echelon;
-    document.getElementById('desc-echelon').textContent = t.echelonDesc;
-    document.getElementById('title-command').textContent = t.command;
-    document.getElementById('desc-command').textContent = t.commandDesc;
-    document.getElementById('title-payout').textContent = t.payout;
-    document.getElementById('desc-payout').textContent = t.payoutDesc;
-    document.getElementById('stSticky').textContent = t.status;
-    document.getElementById('btn-login').textContent = t.login;
-    document.getElementById('btn-pay1').textContent = t.pay1;
-    document.getElementById('btn-pay10').textContent = t.pay5;
-    document.getElementById('security-text').textContent = t.security;
-    document.getElementById('footer-text').textContent = t.footer;
-    document.querySelectorAll('.lang-selector button').forEach(function(b){ b.classList.remove('active'); });
-    document.getElementById('lang-'+lang).classList.add('active');
+    var t = LANG[lang] || LANG.en;
+
+    setText('subtitle', t.subtitle);
+    setText('trust-text', t.trust);
+    setText('title-sentinel', t.sentinel);
+    setText('desc-sentinel', t.sentinelDesc);
+    setText('title-echelon', t.echelon);
+    setText('desc-echelon', t.echelonDesc);
+    setText('title-command', t.command);
+    setText('desc-command', t.commandDesc);
+    setText('title-payout', t.payout);
+    setText('desc-payout', t.payoutDesc);
+    setText('stSticky', t.status);
+    setText('btn-login', t.login);
+    setText('btn-pay1', t.pay1);
+    setText('btn-pay10', t.pay5);
+    setText('security-text', t.security);
+    setText('footer-text', t.footer);
+
+    var buttons = document.querySelectorAll('.lang-selector button');
+    buttons.forEach(function(b) { b.classList.remove('active'); });
+    var activeBtn = document.getElementById('lang-' + lang);
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const savedLang = localStorage.getItem('mb-legacy-lang');
+    var savedLang = localStorage.getItem('mb-legacy-lang');
     if (savedLang && LANG[savedLang]) {
         switchLanguage(savedLang);
     }

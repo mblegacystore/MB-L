@@ -27,7 +27,7 @@ const DASH_LANG = {
         pembeli_penilaian: "⭐ Beri Penilaian",
         pembeli_penilaian_desc: "Nilai produk yang telah anda terima.",
         pembeli_kembali: "⬅ KEMBALI KE KEDAI",
-        amaran: "MB LEGACY STORE TIDAK AKAN PERNAH MEMINTA FRASA LALUAN WALLET ANDA!"
+        amaran: "NOTIS KESELAMATAN: MB Legacy Store TIDAK AKAN PERNAH meminta frasa laluan dompet anda."
     },
     en: {
         penjual_tajuk: "SELLER DASHBOARD",
@@ -56,75 +56,6 @@ const DASH_LANG = {
         pembeli_penilaian: "⭐ Give Rating",
         pembeli_penilaian_desc: "Rate the products you have received.",
         pembeli_kembali: "⬅ BACK TO STORE",
-        amaran: "MB LEGACY STORE WILL NEVER ASK FOR YOUR WALLET PASSPHRASE!"
+        amaran: "SECURITY NOTICE: MB Legacy Store will NEVER ask for your wallet passphrase."
     }
 };
-
-function setDashText(id, text) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = text;
-}
-
-function applyDashboardLanguage() {
-    var lang = localStorage.getItem('mb-legacy-lang') || 'en';
-    var t = DASH_LANG[lang] || DASH_LANG.en;
-
-    // Penjual
-    setDashText('dp-tajuk', t.penjual_tajuk);
-    setDashText('dp-sub', t.penjual_sub);
-    setDashText('dp-tmbh', t.penjual_tmbh);
-    setDashText('dp-tmbh-desc', t.penjual_tmbh_desc);
-    setDashText('dp-produk', t.penjual_produk);
-    setDashText('dp-produk-desc', t.penjual_produk_desc);
-    setDashText('dp-pesanan', t.penjual_pesanan);
-    setDashText('dp-pesanan-desc', t.penjual_pesanan_desc);
-    setDashText('dp-pendapatan', t.penjual_pendapatan);
-    setDashText('dp-pendapatan-desc', t.penjual_pendapatan_desc);
-    setDashText('dp-aduan', t.penjual_aduan);
-    setDashText('dp-aduan-desc', t.penjual_aduan_desc);
-    setDashText('dp-kembali', t.penjual_kembali);
-
-    // Pembeli
-    setDashText('db-tajuk', t.pembeli_tajuk);
-    setDashText('db-sub', t.pembeli_sub);
-    setDashText('db-sejarah', t.pembeli_sejarah);
-    setDashText('db-sejarah-desc', t.pembeli_sejarah_desc);
-    setDashText('db-sejarah-kosong', t.pembeli_sejarah_kosong);
-    setDashText('db-status', t.pembeli_status);
-    setDashText('db-status-desc', t.pembeli_status_desc);
-    setDashText('db-status-kosong', t.pembeli_status_kosong);
-    setDashText('db-aduan', t.pembeli_aduan);
-    setDashText('db-aduan-desc', t.pembeli_aduan_desc);
-    setDashText('db-penilaian', t.pembeli_penilaian);
-    setDashText('db-penilaian-desc', t.pembeli_penilaian_desc);
-    setDashText('db-kembali', t.pembeli_kembali);
-
-    // Amaran
-    setDashText('dash-amaran', t.amaran);
-}
-
-// TAMBAHAN: Fungsi untuk tukar bahasa di dashboard
-function switchDashboardLanguage(lang) {
-    if (lang === 'ms' || lang === 'en') {
-        localStorage.setItem('mb-legacy-lang', lang);
-        applyDashboardLanguage();
-        
-        // Kemaskini butang aktif
-        var buttons = document.querySelectorAll('.lang-selector button');
-        buttons.forEach(function(b) { b.classList.remove('active'); });
-        var activeBtn = document.querySelector('.lang-selector button[onclick*="' + lang + '"]');
-        if (activeBtn) activeBtn.classList.add('active');
-    }
-}
-
-// Panggil semasa muat halaman
-document.addEventListener('DOMContentLoaded', function() {
-    var savedLang = localStorage.getItem('mb-legacy-lang') || 'en';
-    applyDashboardLanguage();
-    
-    // Kemaskini butang aktif
-    var buttons = document.querySelectorAll('.lang-selector button');
-    buttons.forEach(function(b) { b.classList.remove('active'); });
-    var activeBtn = document.querySelector('.lang-selector button[onclick*="' + savedLang + '"]');
-    if (activeBtn) activeBtn.classList.add('active');
-});

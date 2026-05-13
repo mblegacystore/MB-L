@@ -91,10 +91,11 @@ const LANG = {
     }
 };
 
-let currentLang = 'ms';
+let currentLang = 'en';
 
 function switchLanguage(lang) {
     currentLang = lang;
+    localStorage.setItem('mb-legacy-lang', lang);
     const t = LANG[lang] || LANG.en;
     document.getElementById('subtitle').textContent = t.subtitle;
     document.getElementById('trust-text').textContent = t.trust;
@@ -115,3 +116,10 @@ function switchLanguage(lang) {
     document.querySelectorAll('.lang-selector button').forEach(function(b){ b.classList.remove('active'); });
     document.getElementById('lang-'+lang).classList.add('active');
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const savedLang = localStorage.getItem('mb-legacy-lang');
+    if (savedLang && LANG[savedLang]) {
+        switchLanguage(savedLang);
+    }
+});

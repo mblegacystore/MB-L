@@ -4,7 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Penjual – MB LEGACY STORE</title>
-    <link rel="stylesheet" href="../css/gaya-utama.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #050505;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #ffffff;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+        .title-frame { border: 2px solid #FFD700; padding: 20px 40px; margin-bottom: 15px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); background: rgba(255,215,0,0.05); }
+        h1 { color: #FFD700; font-size: 2.2rem; letter-spacing: 4px; font-weight: 400; text-transform: uppercase; margin-bottom: 5px; }
+        .subtitle { color: #999; font-size: 0.8rem; letter-spacing: 3px; }
+        .gold-divider { width: 100%; max-width: 400px; height: 1px; border: none; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px 0; opacity: 0.5; }
+        .lang-selector { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+        .lang-selector button { background: transparent; border: 1px solid #FFD700; color: #FFD700; padding: 5px 8px; margin: 0 1px; cursor: pointer; font-weight: bold; letter-spacing: 1px; transition: all 0.3s; font-size: 0.7rem; }
+        .lang-selector button.active { background: #FFD700; color: #000; }
+        .treasury-section { width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; }
+        .product-card { border: 1px solid #333; padding: 15px; margin-bottom: 15px; text-align: left; background: rgba(255,255,255,0.02); cursor: pointer; border-radius: 4px; }
+        .product-card h3 { color: #FFD700; font-size: 1rem; margin-bottom: 5px; }
+        .product-card p { color: #999; font-size: 0.75rem; }
+        .golden-btn { display: block; width: 85%; max-width: 400px; margin: 0 auto 12px auto; padding: 14px; font-size: 1rem; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; text-align: center; text-decoration: none; border-radius: 2px; background: rgba(255,215,0,0.05); color: #FFD700; border: 1px solid #FFD700; }
+        .footer-frame { margin-top: 20px; border: 2px solid #FFD700; padding: 18px 20px; text-align: center; background: #1a1a1a; max-width: 400px; width: 100%; border-radius: 6px; }
+        .footer-frame p { color: #FFD700; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+        footer { margin-top: 20px; color: #555; font-size: 0.6rem; letter-spacing: 2px; }
+    </style>
 </head>
 <body>
 
@@ -16,51 +44,37 @@
 <hr class="gold-divider">
 
 <div class="lang-selector">
-    <button id="lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
-    <button id="lang-en" onclick="switchLanguage('en')">🇬🇧 EN</button>
-    <button id="lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
-    <button id="lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
-    <button id="lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+    <button id="dp-lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
+    <button id="dp-lang-en" class="active" onclick="switchLanguage('en')">🇬🇧 EN</button>
+    <button id="dp-lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
+    <button id="dp-lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+    <button id="dp-lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
 </div>
 
 <div class="treasury-section">
     <div class="product-card" onclick="alert('Fungsi tambah produk akan datang.')">
-        <div class="product-info">
-            <h3>📦 Tambah Produk Baru</h3>
-            <p>Senaraikan produk baharu untuk dijual di MB LEGACY STORE.</p>
-        </div>
+        <h3>📦 Tambah Produk Baru</h3>
+        <p>Senaraikan produk baharu untuk dijual di MB LEGACY STORE.</p>
     </div>
-
     <div class="product-card" onclick="alert('Senarai produk akan datang.')">
-        <div class="product-info">
-            <h3>📋 Produk Saya</h3>
-            <p>Lihat dan urus semua produk yang telah anda senaraikan.</p>
-        </div>
+        <h3>📋 Produk Saya</h3>
+        <p>Lihat dan urus semua produk yang telah anda senaraikan.</p>
     </div>
-
     <div class="product-card" onclick="alert('Pesanan akan datang.')">
-        <div class="product-info">
-            <h3>🛒 Pesanan Diterima</h3>
-            <p>Lihat dan proses pesanan daripada pelanggan.</p>
-        </div>
+        <h3>🛒 Pesanan Diterima</h3>
+        <p>Lihat dan proses pesanan daripada pelanggan.</p>
     </div>
-
     <div class="product-card" onclick="alert('Pendapatan akan datang.')">
-        <div class="product-info">
-            <h3>💰 Pendapatan</h3>
-            <p>Lihat jumlah Pi yang telah anda terima.</p>
-        </div>
+        <h3>💰 Pendapatan</h3>
+        <p>Lihat jumlah Pi yang telah anda terima.</p>
     </div>
-
     <div class="product-card" onclick="alert('Aduan akan datang.')">
-        <div class="product-info">
-            <h3>🚨 Aduan Pelanggan</h3>
-            <p>Lihat dan balas aduan daripada pelanggan.</p>
-        </div>
+        <h3>🚨 Aduan Pelanggan</h3>
+        <p>Lihat dan balas aduan daripada pelanggan.</p>
     </div>
 </div>
 
-<a href="../index.html" class="golden-btn" style="text-align:center;display:block;text-decoration:none;">⬅ KEMBALI KE KEDAI</a>
+<a href="../index.html" class="golden-btn">⬅ KEMBALI KE KEDAI</a>
 
 <div class="footer-frame">
     <p>MB LEGACY STORE TIDAK AKAN PERNAH MEMINTA FRASA LALUAN WALLET ANDA!</p>
@@ -70,8 +84,14 @@
 
 <script src="../fungsi/bahasa.js"></script>
 <script>
-    const saved = localStorage.getItem('mb-legacy-lang') || 'en';
-    switchLanguage(saved);
+    var saved = localStorage.getItem('mb-legacy-lang') || 'en';
+    if (window.switchLanguage) {
+        switchLanguage(saved);
+    } else {
+        window.addEventListener('load', function() {
+            if (window.switchLanguage) switchLanguage(saved);
+        });
+    }
 </script>
 </body>
 </html>

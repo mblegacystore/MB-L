@@ -103,4 +103,28 @@ function applyDashboardLanguage() {
     setDashText('dash-amaran', t.amaran);
 }
 
-document.addEventListener('DOMContentLoaded', applyDashboardLanguage);
+// TAMBAHAN: Fungsi untuk tukar bahasa di dashboard
+function switchDashboardLanguage(lang) {
+    if (lang === 'ms' || lang === 'en') {
+        localStorage.setItem('mb-legacy-lang', lang);
+        applyDashboardLanguage();
+        
+        // Kemaskini butang aktif
+        var buttons = document.querySelectorAll('.lang-selector button');
+        buttons.forEach(function(b) { b.classList.remove('active'); });
+        var activeBtn = document.querySelector('.lang-selector button[onclick*="' + lang + '"]');
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+}
+
+// Panggil semasa muat halaman
+document.addEventListener('DOMContentLoaded', function() {
+    var savedLang = localStorage.getItem('mb-legacy-lang') || 'en';
+    applyDashboardLanguage();
+    
+    // Kemaskini butang aktif
+    var buttons = document.querySelectorAll('.lang-selector button');
+    buttons.forEach(function(b) { b.classList.remove('active'); });
+    var activeBtn = document.querySelector('.lang-selector button[onclick*="' + savedLang + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+});

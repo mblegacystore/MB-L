@@ -21,9 +21,6 @@
         h1 { color: #FFD700; font-size: 2.2rem; letter-spacing: 4px; font-weight: 400; text-transform: uppercase; margin-bottom: 5px; }
         .subtitle { color: #999; font-size: 0.8rem; letter-spacing: 3px; }
         .gold-divider { width: 100%; max-width: 400px; height: 1px; border: none; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px 0; opacity: 0.5; }
-        .lang-selector { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
-        .lang-selector button { background: transparent; border: 1px solid #FFD700; color: #FFD700; padding: 5px 8px; margin: 0 1px; cursor: pointer; font-weight: bold; letter-spacing: 1px; transition: all 0.3s; font-size: 0.7rem; }
-        .lang-selector button.active { background: #FFD700; color: #000; }
         .treasury-section { width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; }
         .product-card { border: 1px solid #333; padding: 15px; margin-bottom: 15px; text-align: left; background: rgba(255,255,255,0.02); cursor: pointer; border-radius: 4px; }
         .product-card h3 { color: #FFD700; font-size: 1rem; margin-bottom: 5px; }
@@ -38,59 +35,41 @@
 <body>
 
 <div class="title-frame">
-    <h1>DASHBOARD PEMBELI</h1>
-    <p class="subtitle">Sejarah & Status Pesanan Anda</p>
+    <h1 id="db-tajuk">BUYER DASHBOARD</h1>
+    <p class="subtitle" id="db-sub">Your Order History & Status</p>
 </div>
 
 <hr class="gold-divider">
 
-<div class="lang-selector">
-    <button id="db-lang-ms" onclick="switchLanguage('ms')">🇲🇾 MS</button>
-    <button id="db-lang-en" class="active" onclick="switchLanguage('en')">🇬🇧 EN</button>
-    <button id="db-lang-id" onclick="switchLanguage('id')">🇮🇩 ID</button>
-    <button id="db-lang-zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
-    <button id="db-lang-ar" onclick="switchLanguage('ar')">🇸🇦 AR</button>
-</div>
-
 <div class="treasury-section">
     <div class="product-card">
-        <h3>📜 Sejarah Pembelian</h3>
-        <p>Lihat semua produk yang telah anda beli.</p>
-        <span class="product-price" style="color:#27ae60;">0 Pembelian</span>
+        <h3 id="db-sejarah">📜 Purchase History</h3>
+        <p id="db-sejarah-desc">View all products you have purchased.</p>
+        <span class="product-price" style="color:#27ae60;" id="db-sejarah-kosong">0 Purchases</span>
     </div>
     <div class="product-card">
-        <h3>📦 Status Pesanan</h3>
-        <p>Semak status penghantaran pesanan anda.</p>
-        <span class="product-price">Tiada Pesanan Aktif</span>
+        <h3 id="db-status">📦 Order Status</h3>
+        <p id="db-status-desc">Check the shipping status of your orders.</p>
+        <span class="product-price" id="db-status-kosong">No Active Orders</span>
     </div>
     <div class="product-card" onclick="alert('Fungsi aduan akan datang.')">
-        <h3>🚨 Buka Aduan</h3>
-        <p>Laporkan masalah dengan pesanan anda.</p>
+        <h3 id="db-aduan">🚨 Open Dispute</h3>
+        <p id="db-aduan-desc">Report a problem with your order.</p>
     </div>
     <div class="product-card" onclick="alert('Fungsi penilaian akan datang.')">
-        <h3>⭐ Beri Penilaian</h3>
-        <p>Nilai produk yang telah anda terima.</p>
+        <h3 id="db-penilaian">⭐ Give Rating</h3>
+        <p id="db-penilaian-desc">Rate the products you have received.</p>
     </div>
 </div>
 
-<a href="../index.html" class="golden-btn">⬅ KEMBALI KE KEDAI</a>
+<a href="../index.html" class="golden-btn" id="db-kembali">⬅ BACK TO STORE</a>
 
 <div class="footer-frame">
-    <p>MB LEGACY STORE TIDAK AKAN PERNAH MEMINTA FRASA LALUAN WALLET ANDA!</p>
+    <p id="dash-amaran">MB LEGACY STORE WILL NEVER ASK FOR YOUR WALLET PASSPHRASE!</p>
 </div>
 
 <footer>© 2026 MB LEGACY STORE</footer>
 
-<script src="../fungsi/bahasa.js"></script>
-<script>
-    var saved = localStorage.getItem('mb-legacy-lang') || 'en';
-    if (window.switchLanguage) {
-        switchLanguage(saved);
-    } else {
-        window.addEventListener('load', function() {
-            if (window.switchLanguage) switchLanguage(saved);
-        });
-    }
-</script>
+<script src="../fungsi/bahasa-merchant.js"></script>
 </body>
 </html>

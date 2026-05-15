@@ -1,4 +1,3 @@
-// Kandungan Bahasa Inggeris
 const PRODUCT_CONTENT_EN = {
     free: {
         title: "🔐 PI NETWORK SECURITY GUIDE",
@@ -9,14 +8,14 @@ const PRODUCT_CONTENT_EN = {
             '<p style="color:#fff;">✅ <b>REAL Popup (Pi Wallet):</b><br>' +
             '• TIMING: Appears immediately after clicking a transaction button.<br>' +
             '• LOCATION: Only inside Pi Browser, not in other browsers.<br>' +
-            '• DESIGN: WHITE/LIGHT background with Pi Network logo.<br>' +
+            '• DESIGN: Plain WHITE background. NO Pi logo. Very simple, text-only popup.<br>' +
             '• TEXT: Only asks "Enter your passphrase".<br>' +
             '• NO scary language or threats.<br>' +
             '• NO request for email, password, or other personal info.<br><br>' +
             '❌ <b>FAKE Popup (Phishing):</b><br>' +
             '• TIMING: Appears randomly, even without any transaction.<br>' +
             '• LOCATION: Can appear on any website or browser.<br>' +
-            '• DESIGN: Strange background, different colors, no Pi logo or fake logo.<br>' +
+            '• DESIGN: Strange background, different colors, may have fake Pi logo.<br>' +
             '• TEXT: Uses scary language like "Your account will be suspended!" or "Verify immediately!".<br>' +
             '• ASKS for email, password, phone number, or other personal details.<br>' +
             '• URL is NOT from minepi.com domain.</p>' +
@@ -32,20 +31,20 @@ const PRODUCT_CONTENT_EN = {
         title: "📊 THE ECHELON BRIEFING PACK",
         content: '<p style="color:#fff;">Advanced intelligence module unlocked after payment.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">1. Pi Network Economics</h4>' +
-            '<p style="color:#ddd;">Deep dive into tokenomics, supply distribution, and the future of Pi as a global digital currency. Understanding the economic model behind Pi will help you make informed decisions.</p>' +
+            '<p style="color:#ddd;">Deep dive into tokenomics, supply distribution, and the future of Pi as a global digital currency.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">2. Node Operations & Rewards</h4>' +
-            '<p style="color:#ddd;">Learn how to run a Pi Node effectively, contribute to network security, and understand the reward mechanisms for node operators.</p>' +
+            '<p style="color:#ddd;">Learn how to run a Pi Node effectively and contribute to network security.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">3. KYC & Mainnet Migration</h4>' +
-            '<p style="color:#ddd;">Complete guide to the KYC process, Mainnet checklist, and strategies for successful migration of your Pi to the Mainnet blockchain.</p>'
+            '<p style="color:#ddd;">Complete guide to the KYC process and strategies for successful Mainnet migration.</p>'
     },
     command: {
         title: "🛡️ THE COMMAND CENTER SUITE",
         content: '<p style="color:#fff;">Professional tools unlocked after payment.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">1. Developer API Access</h4>' +
-            '<p style="color:#ddd;">Full API documentation for integrating Pi payments into your applications. Includes code examples, SDK references, and best practices.</p>' +
+            '<p style="color:#ddd;">Full API documentation for integrating Pi payments into your applications.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">2. Enterprise Security Protocols</h4>' +
-            '<p style="color:#ddd;">Industry-standard security measures for handling Pi transactions at scale. Includes wallet management, multi-signature setups, and audit trails.</p>' +
+            '<p style="color:#ddd;">Industry-standard security measures for handling Pi transactions at scale.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">3. Ecosystem Integration</h4>' +
-            '<p style="color:#ddd;">Strategies for connecting your business to the broader Pi ecosystem for maximum reach and engagement with the Pioneer community.</p>'
+            '<p style="color:#ddd;">Strategies for connecting your business to the Pi ecosystem.</p>'
     }
 };

@@ -1,4 +1,3 @@
-// Kandungan Bahasa Melayu
 const PRODUCT_CONTENT_MS = {
     free: {
         title: "🔐 PANDUAN KESELAMATAN PI NETWORK",
@@ -9,14 +8,14 @@ const PRODUCT_CONTENT_MS = {
             '<p style="color:#fff;">✅ <b>Popup SEBENAR (Dompet Pi):</b><br>' +
             '• MASA: Muncul serta-merta selepas klik butang transaksi.<br>' +
             '• LOKASI: Hanya di dalam Pi Browser, bukan pelayar lain.<br>' +
-            '• REKA BENTUK: Latar belakang PUTIH/CERAH dengan logo Pi Network.<br>' +
+            '• REKA BENTUK: Latar belakang PUTIH polos. TIADA logo Pi. Sangat ringkas, teks sahaja.<br>' +
             '• TEKS: Hanya meminta "Masukkan passphrase anda".<br>' +
             '• TIADA unsur menakutkan atau ugutan.<br>' +
             '• TIADA permintaan email, kata laluan, atau maklumat peribadi lain.<br><br>' +
             '❌ <b>Popup PALSU (Phishing):</b><br>' +
             '• MASA: Muncul secara rawak, walaupun tanpa sebarang transaksi.<br>' +
             '• LOKASI: Boleh muncul di mana-mana laman web atau pelayar.<br>' +
-            '• REKA BENTUK: Latar belakang pelik, warna berbeza, tiada logo Pi atau logo tiruan.<br>' +
+            '• REKA BENTUK: Latar belakang pelik, warna berbeza, mungkin ada logo Pi palsu.<br>' +
             '• TEKS: Menggunakan ayat menakutkan seperti "Akaun anda akan digantung!" atau "Sahkan segera!".<br>' +
             '• MEMINTA email, kata laluan, nombor telefon, atau maklumat peribadi lain.<br>' +
             '• URL BUKAN dari domain minepi.com.</p>' +
@@ -32,20 +31,20 @@ const PRODUCT_CONTENT_MS = {
         title: "📊 PEK TAKLIMAT ECHELON",
         content: '<p style="color:#fff;">Modul perisikan lanjutan dibuka selepas pembayaran.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">1. Ekonomi Pi Network</h4>' +
-            '<p style="color:#ddd;">Penerangan mendalam tentang tokenomics, pengagihan bekalan, dan masa depan Pi sebagai mata wang digital global. Memahami model ekonomi Pi akan membantu anda membuat keputusan yang bijak.</p>' +
+            '<p style="color:#ddd;">Penerangan mendalam tentang tokenomics, pengagihan bekalan, dan masa depan Pi.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">2. Operasi Node & Ganjaran</h4>' +
-            '<p style="color:#ddd;">Ketahui cara menjalankan Pi Node dengan berkesan, menyumbang kepada keselamatan rangkaian, dan memahami mekanisme ganjaran untuk pengendali node.</p>' +
+            '<p style="color:#ddd;">Ketahui cara menjalankan Pi Node dengan berkesan.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">3. KYC & Migrasi Mainnet</h4>' +
-            '<p style="color:#ddd;">Panduan lengkap untuk proses KYC, senarai semak Mainnet, dan strategi untuk migrasi Pi anda yang berjaya ke blockchain Mainnet.</p>'
+            '<p style="color:#ddd;">Panduan lengkap untuk proses KYC dan strategi migrasi Mainnet.</p>'
     },
     command: {
         title: "🛡️ SUIT PUSAT KAWALAN",
         content: '<p style="color:#fff;">Alat profesional dibuka selepas pembayaran.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">1. Akses API Pembangun</h4>' +
-            '<p style="color:#ddd;">Dokumentasi API penuh untuk mengintegrasikan pembayaran Pi ke dalam aplikasi anda. Termasuk contoh kod, rujukan SDK, dan amalan terbaik.</p>' +
+            '<p style="color:#ddd;">Dokumentasi API penuh untuk mengintegrasikan pembayaran Pi.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">2. Protokol Keselamatan Perusahaan</h4>' +
-            '<p style="color:#ddd;">Langkah keselamatan standard industri untuk mengendalikan transaksi Pi pada skala besar. Termasuk pengurusan dompet, persediaan multi-tandatangan, dan jejak audit.</p>' +
+            '<p style="color:#ddd;">Langkah keselamatan standard industri untuk transaksi Pi.</p>' +
             '<h4 style="color:#FFD700;margin-top:15px;">3. Integrasi Ekosistem</h4>' +
-            '<p style="color:#ddd;">Strategi untuk menghubungkan perniagaan anda ke ekosistem Pi yang lebih luas untuk jangkauan maksimum dan penglibatan dengan komuniti Pioneer.</p>'
+            '<p style="color:#ddd;">Strategi untuk menghubungkan perniagaan anda ke ekosistem Pi.</p>'
     }
 };

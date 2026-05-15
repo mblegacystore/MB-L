@@ -1,3 +1,4 @@
+// ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
@@ -42,8 +43,20 @@ async function bersihkanSebelumBayar() {
     } catch (e) {}
 }
 
+// ========== BELI PRODUK ==========
 async function buyProduct(key, amount) {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    
+    // 🔥 SEMAK: Jika sudah beli, terus papar kandungan
+    if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
+        showEchelonReport();
+        return;
+    }
+    if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
+        showLockedContent('command');
+        return;
+    }
+    
     await bersihkanSebelumBayar();
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
@@ -65,8 +78,18 @@ async function buyProduct(key, amount) {
                     body: JSON.stringify({ paymentId: id, txid: txid })
                 }).then(function() {
                     updateStatus("Berjaya!");
-                    if (key === "echelon") { currentUser.boughtEchelon = true; showEchelonReport(); }
-                    if (key === "command") { showLockedContent("command"); }
+                    
+                    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage
+                    if (key === "echelon") {
+                        localStorage.setItem('mb-legacy-bought-echelon', 'true');
+                        currentUser.boughtEchelon = true;
+                        showEchelonReport();
+                    }
+                    if (key === "command") {
+                        localStorage.setItem('mb-legacy-bought-command', 'true');
+                        currentUser.boughtCommand = true;
+                        showLockedContent("command");
+                    }
                 }).catch(async function() {
                     await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
@@ -78,6 +101,7 @@ async function buyProduct(key, amount) {
     );
 }
 
+// ========== CLAIM A2U ==========
 async function requestPayout() {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     await bersihkanSebelumBayar();
@@ -101,4 +125,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-}
+                                                                          }

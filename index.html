@@ -34,6 +34,21 @@
     <button id="tab-merchant" onclick="switchTab('merchant')" style="flex:1; padding: 10px; background: transparent; color: #666; border: 1px solid #666; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">🛡️ Merchant Vault</button>
 </div>
 
+<!-- ===== BUTANG LOGIN (DI ATAS - TAMBAH EMOJI) ===== -->
+<button id="btn-login" class="golden-btn" onclick="doLogin()">🔑 CONNECT ACCOUNT</button>
+
+<!-- ===== PIONEER REWARD (CLAIM A2U) DI ATAS ===== -->
+<div class="treasury-section" id="payout-content">
+    <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
+        <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
+        <div class="product-info">
+            <h3 id="title-payout">CLAIM TESTNET PI (A2U)</h3>
+            <p id="desc-payout">Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
+            <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
+        </div>
+    </div>
+</div>
+
 <!-- MERCHANT VAULT -->
 <div id="merchant-content" style="display:none; max-width:400px; width:100%; text-align:center; margin-bottom:20px;">
     <div style="border:2px solid #FFD700; padding:30px 20px; background:rgba(255,215,0,0.03); border-radius:4px;">
@@ -87,21 +102,8 @@
     </div>
 </div>
 
-<!-- PIONEER REWARD -->
-<div class="treasury-section" id="payout-content">
-    <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
-        <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
-        <div class="product-info">
-            <h3 id="title-payout">CLAIM TESTNET PI (A2U)</h3>
-            <p id="desc-payout">Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
-            <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
-        </div>
-    </div>
-</div>
-
 <div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
 
-<button id="btn-login" class="golden-btn" onclick="doLogin()">CONNECT ACCOUNT</button>
 <button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0 PI</button>
 <button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5 PI</button>
 

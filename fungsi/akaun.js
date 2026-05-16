@@ -5,9 +5,8 @@ async function doLogin() {
     try {
         const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
         
-        // ✅ PERUBAHAN HANYA DI SINI: guna auth.uid (bukan auth.user.uid)
         currentUser = {
-            uid: auth.uid,
+            uid: auth.uid,                    // ✅ TAMBAH BARIS INI (guna auth.uid)
             username: auth.username,
             wallet_address: auth.wallet_address || ""
         };
@@ -22,4 +21,15 @@ async function doLogin() {
     } catch (e) {
         updateStatus("Login gagal: " + e.message);
     }
-            }
+}
+
+// RESTORE SESSION SELEPAS REFRESH (KEKALKAN)
+const saved = localStorage.getItem('currentUser');
+if (saved) {
+    try {
+        currentUser = JSON.parse(saved);
+        if (currentUser.username) updateStatus("Welcome back: " + currentUser.username);
+        document.getElementById("btn-login").style.display = "none";
+        tryEnablePaymentButtons();
+    } catch (e) {}
+}

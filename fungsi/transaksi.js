@@ -89,13 +89,36 @@ async function buyProduct(key, amount) {
                 }).then(function() {
                     updateStatus("Berjaya!");
                     
-                    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage
                     if (key === "echelon") {
+                        // ✅ Popup hanya SEKALI (jika belum pernah beli)
+                        if (!localStorage.getItem('mb-legacy-bought-echelon')) {
+                            if (typeof showSuccessPopup === 'function') {
+                                showSuccessPopup(
+                                    "✅ PURCHASE SUCCESSFUL!",
+                                    "THE ECHELON BRIEFING PACK is now available.\nThank you for your support.",
+                                    "OK"
+                                );
+                            } else {
+                                alert("Purchase successful! Content is now available.");
+                            }
+                        }
                         localStorage.setItem('mb-legacy-bought-echelon', 'true');
                         currentUser.boughtEchelon = true;
                         showEchelonReport();
                     }
                     if (key === "command") {
+                        // ✅ Popup hanya SEKALI (jika belum pernah beli)
+                        if (!localStorage.getItem('mb-legacy-bought-command')) {
+                            if (typeof showSuccessPopup === 'function') {
+                                showSuccessPopup(
+                                    "✅ PURCHASE SUCCESSFUL!",
+                                    "THE COMMAND CENTER SUITE is now available.\nThank you for your support.",
+                                    "OK"
+                                );
+                            } else {
+                                alert("Purchase successful! Content is now available.");
+                            }
+                        }
                         localStorage.setItem('mb-legacy-bought-command', 'true');
                         currentUser.boughtCommand = true;
                         showLockedContent("command");
@@ -129,7 +152,7 @@ async function requestPayout() {
                 .then(function() { 
                     updateStatus("0.1 Pi dihantar!");
                     
-                    // ✅ POPUP SUCCESS A2U (tanpa fallback alert)
+                    // ✅ POPUP SUCCESS A2U
                     if (typeof showSuccessPopup === 'function') {
                         showSuccessPopup(
                             "✅ REWARD RECEIVED!",

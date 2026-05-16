@@ -134,8 +134,8 @@
 <script src="fungsi/akaun.js"></script>
 <script src="fungsi/bahasa.js"></script>
 <script src="fungsi/modal.js"></script>
+<script src="fungsi/popup-warning.js"></script>
 <script src="fungsi/transaksi.js"></script>
-<!-- popup-warning.js telah dibuang – tidak diperlukan lagi -->
 <script>
     Pi.init({ version: "2.0", sandbox: true });
     
@@ -143,9 +143,6 @@
     if (window.switchLanguage) {
         switchLanguage(savedLang);
     }
-    
-    // ===== FUNGSI CONFIRM AND BUY TELAH DIPINDAHKAN KE popup-warning.js =====
-    // ===== JANGAN TAMBAH DI SINI =====
 
     window.switchTab = function(tab) {
         var d = document.getElementById('digital-content');
@@ -169,4 +166,4 @@
     };
 </script>
 </body>
-</html>
+    </html>

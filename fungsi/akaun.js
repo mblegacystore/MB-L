@@ -3,36 +3,59 @@ let currentUser = null;
 
 // ========== LOGIN ==========
 async function doLogin() {
-    updateStatus("Menyambung...");
+    // Gunakan alert sementara untuk debug (elak ralat updateStatus)
+    alert("Login started...");
+    
     try {
         const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
         
-        // ✅ BETUL: uid dari root auth (bukan auth.user)
+        alert("Login success! UID: " + auth.uid);
+        
         currentUser = {
             uid: auth.uid,
             username: auth.username,
             wallet_address: auth.wallet_address || ""
         };
         
-        // 🔥 PULIHKAN STATUS PEMBELIAN DARI localStorage
-        if (localStorage.getItem('mb-legacy-bought-echelon') === 'true') currentUser.boughtEchelon = true;
-        if (localStorage.getItem('mb-legacy-bought-command') === 'true') currentUser.boughtCommand = true;
+        // Simpan ke localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
-        updateStatus(currentUser.username);
-        document.getElementById("btn-login").style.display = "none";
-        tryEnablePaymentButtons();
+        // Sembunyikan butang login
+        const loginBtn = document.getElementById("btn-login");
+        if (loginBtn) loginBtn.style.display = "none";
+        
+        // Update status jika fungsi wujud
+        if (typeof updateStatus === 'function') {
+            updateStatus("Logged in as: " + currentUser.username);
+        }
+        
+        // Aktifkan butang bayar jika fungsi wujud
+        if (typeof tryEnablePaymentButtons === 'function') {
+            tryEnablePaymentButtons();
+        }
+        
+        alert("Login completed!");
+        
     } catch (e) {
-        updateStatus("Login gagal: " + e.message);
+        alert("Login error: " + e.message);
+        if (typeof updateStatus === 'function') {
+            updateStatus("Login gagal: " + e.message);
+        }
     }
 }
 
-// ========== RESTORE SESSION SELEPAS REFRESH ==========
+// ========== RESTORE SESSION ==========
 const saved = localStorage.getItem('currentUser');
 if (saved) {
     try {
         currentUser = JSON.parse(saved);
-        updateStatus("Welcome back: " + currentUser.username);
-        document.getElementById("btn-login").style.display = "none";
-        tryEnablePaymentButtons();
+        if (typeof updateStatus === 'function') {
+            updateStatus("Welcome back: " + currentUser.username);
+        }
+        const loginBtn = document.getElementById("btn-login");
+        if (loginBtn) loginBtn.style.display = "none";
+        if (typeof tryEnablePaymentButtons === 'function') {
+            tryEnablePaymentButtons();
+        }
     } catch (e) {}
 }

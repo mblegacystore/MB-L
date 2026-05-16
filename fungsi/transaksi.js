@@ -124,24 +124,24 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U ==========
+// ========== CLAIM A2U (DIBETULKAN) ==========
 async function requestPayout() {
     if (!currentUser) { 
-        updateStatus("DEBUG: No currentUser. Please login first.");
+        updateStatus("Sila login dahulu.");
         return; 
     }
     
-    // Debug: Tunjuk uid dalam status
-    updateStatus("DEBUG: uid = " + (currentUser.uid || "UNDEFINED") + ", id = " + (currentUser.id || "UNDEFINED"));
+    // ✅ Bersihkan payment tergendala dulu
+    await bersihkanSebelumBayar();
     
-    const userId = currentUser.uid || currentUser.id;
+    const userId = currentUser.uid;
     
     if (!userId) {
-        updateStatus("DEBUG ERROR: No user ID found!");
+        updateStatus("ERROR: No user ID found! Please re-login.");
         return;
     }
     
-    updateStatus("DEBUG: Sending request with userId = " + userId);
+    updateStatus("Memproses ganjaran...");
     
     try {
         const response = await fetch("/api/bayar-keluar.js", {
@@ -156,9 +156,6 @@ async function requestPayout() {
         
         const result = await response.json();
         
-        // Tunjuk response dalam status
-        updateStatus("DEBUG Response: " + JSON.stringify(result));
-        
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");
             if (typeof showSuccessPopup === 'function') {
@@ -172,6 +169,6 @@ async function requestPayout() {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
     } catch (error) {
-        updateStatus("DEBUG Error: " + error.message);
+        updateStatus("Rangkaian error: " + error.message);
     }
-}
+                        }

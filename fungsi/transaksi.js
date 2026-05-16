@@ -126,22 +126,38 @@ async function buyProduct(key, amount) {
 
 // ========== CLAIM A2U ==========
 async function requestPayout() {
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    if (!currentUser) { 
+        updateStatus("DEBUG: No currentUser. Please login first.");
+        return; 
+    }
     
-    updateStatus("Memproses ganjaran...");
+    // Debug: Tunjuk uid dalam status
+    updateStatus("DEBUG: uid = " + (currentUser.uid || "UNDEFINED") + ", id = " + (currentUser.id || "UNDEFINED"));
+    
+    const userId = currentUser.uid || currentUser.id;
+    
+    if (!userId) {
+        updateStatus("DEBUG ERROR: No user ID found!");
+        return;
+    }
+    
+    updateStatus("DEBUG: Sending request with userId = " + userId);
     
     try {
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                uid: currentUser.uid, 
+                uid: userId, 
                 amount: 0.1,
                 memo: "A2U Reward - MB Legacy Store"
             })
         });
         
         const result = await response.json();
+        
+        // Tunjuk response dalam status
+        updateStatus("DEBUG Response: " + JSON.stringify(result));
         
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");
@@ -156,7 +172,6 @@ async function requestPayout() {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
     } catch (error) {
-        console.error("Error:", error);
-        updateStatus("Rangkaian error. Sila cuba lagi.");
+        updateStatus("DEBUG Error: " + error.message);
     }
-                                    }
+}

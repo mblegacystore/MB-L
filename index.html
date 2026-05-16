@@ -140,15 +140,8 @@
         switchLanguage(savedLang);
     }
     
-    // Fungsi popup pengesahan sebelum beli produk berbayar
-    window.confirmAndBuy = function(productKey, amount) {
-        var productName = (productKey === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
-        var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
-        
-        if (confirm(message)) {
-            buyProduct(productKey, amount);
-        }
-    };
+    // ===== FUNGSI CONFIRM AND BUY TELAH DIPINDAHKAN KE popup-warning.js =====
+    // ===== JANGAN TAMBAH DI SINI =====
 
     window.switchTab = function(tab) {
         var d = document.getElementById('digital-content');

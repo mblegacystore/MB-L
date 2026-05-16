@@ -295,10 +295,10 @@ h1 {
     word-break: break-all;
 }
 
-/* ===== FOOTER – ANIMASI EMAS (BUKAN MERAH) ===== */
-@keyframes goldBlink {
-    0%, 100% { background-color: #1a1a1a; border-color: #FFD700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
-    50% { background-color: #2a2a00; border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+/* ===== FOOTER – ANIMASI EMAS (MERAH) ===== */
+@keyframes warningBlink {
+    0%, 100% { background-color: rgba(180, 60, 60, 0.7); border-color: #FF8888; box-shadow: 0 0 20px rgba(255, 100, 100, 0.5); }
+    50% { background-color: rgba(220, 80, 80, 0.8); border-color: #FFAAAA; box-shadow: 0 0 30px rgba(255, 120, 120, 0.7); }
 }
 
 .footer-frame {

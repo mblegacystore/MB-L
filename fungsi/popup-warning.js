@@ -1,4 +1,17 @@
 // ============================================
+// POPUP PENGESAHAN SEBELUM BELI PRODUK (U2A)
+// ============================================
+
+window.confirmAndBuy = function(key, amount) {
+    var productName = (key === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
+    var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
+    
+    if (confirm(message)) {
+        buyProduct(key, amount);
+    }
+};
+
+// ============================================
 // POPUP WARNING (SEBELUM A2U)
 // ============================================
 
@@ -89,7 +102,6 @@ function insertWarningPopup() {
 // ============================================
 
 function showSuccessPopup(title, message, buttonText) {
-    // Buang popup lama jika ada
     var existingPopup = document.getElementById('customSuccessPopup');
     if (existingPopup) existingPopup.remove();
 
@@ -116,7 +128,6 @@ function showSuccessPopup(title, message, buttonText) {
 
     document.body.appendChild(modal);
 
-    // Tutup jika klik luar popup
     modal.addEventListener('click', function(e) {
         if (e.target === modal) modal.remove();
     });
@@ -130,4 +141,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', insertWarningPopup);
 } else {
     insertWarningPopup();
-}
+                }

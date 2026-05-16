@@ -128,36 +128,35 @@ async function buyProduct(key, amount) {
 async function requestPayout() {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     
-    await bersihkanSebelumBayar();
-    updateStatus("Mencipta A2U...");
-    Pi.createPayment(
-        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
-        {
-            onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, action: "approve" }) });
-            },
-            onReadyForServerCompletion: function(id, txid) {
-                fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) })
-                .then(function() { 
-                    updateStatus("0.1 Pi dihantar!");
-                    
-                    // ✅ POPUP SUCCESS A2U
-                    if (typeof showSuccessPopup === 'function') {
-                        showSuccessPopup(
-                            "✅ REWARD RECEIVED!",
-                            "0.1 Test-Pi has been sent to your wallet.",
-                            "OK"
-                        );
-                    }
-                })
-                .catch(async function() {
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
-                });
-            },
-            onCancel: function() { updateStatus("Dibatalkan"); },
-            onError: function(e) { updateStatus("Ralat: " + e.message); }
+    updateStatus("Memproses ganjaran...");
+    
+    try {
+        const response = await fetch("/api/bayar-keluar.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                uid: currentUser.uid, 
+                amount: 0.1,
+                memo: "A2U Reward - MB Legacy Store"
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            updateStatus("0.1 Pi dihantar!");
+            if (typeof showSuccessPopup === 'function') {
+                showSuccessPopup(
+                    "✅ REWARD RECEIVED!",
+                    "0.1 Test-Pi has been sent to your wallet.",
+                    "OK"
+                );
+            }
+        } else {
+            updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
-    );
-                    }
+    } catch (error) {
+        console.error("Error:", error);
+        updateStatus("Rangkaian error. Sila cuba lagi.");
+    }
+}

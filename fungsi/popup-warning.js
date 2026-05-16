@@ -3,6 +3,16 @@
 // ============================================
 
 window.confirmAndBuy = function(key, amount) {
+    // ✅ SEMAK: Jika sudah beli, terus buka kandungan (JANGAN tunjuk popup)
+    if (key === 'echelon' && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
+        showEchelonReport();
+        return;
+    }
+    if (key === 'command' && localStorage.getItem('mb-legacy-bought-command') === 'true') {
+        showLockedContent('command');
+        return;
+    }
+    
     var productName = (key === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
     var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
     
@@ -186,4 +196,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', insertWarningPopup);
 } else {
     insertWarningPopup();
-            }
+        }

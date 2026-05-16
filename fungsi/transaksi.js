@@ -129,15 +129,13 @@ async function requestPayout() {
                 .then(function() { 
                     updateStatus("0.1 Pi dihantar!");
                     
-                    // ✅ POPUP SUCCESS A2U
+                    // ✅ POPUP SUCCESS A2U (tanpa fallback alert)
                     if (typeof showSuccessPopup === 'function') {
                         showSuccessPopup(
                             "✅ REWARD RECEIVED!",
                             "0.1 Test-Pi has been sent to your wallet.",
                             "OK"
                         );
-                    } else {
-                        alert("0.1 Test-Pi has been sent to your wallet.");
                     }
                 })
                 .catch(async function() {
@@ -149,4 +147,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-}
+                    }

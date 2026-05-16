@@ -10,9 +10,6 @@ window.confirmAndBuy = function(key, amount) {
 
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
-    ...
-}// ========== PEMBERSIHAN AWAL ==========
-async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
     try {
@@ -92,23 +89,15 @@ async function buyProduct(key, amount) {
                 }).then(function() {
                     updateStatus("Berjaya!");
                     
+                    // ✅ TAMBAH POPUP SELEPAS U2A BERJAYA
+                    alert("✅ Purchase successful! The product content will now be available.");
                     
-    
-    // ✅ TAMBAH POPUP INI (selepas U2A berjaya)
-    alert("✅ Purchase successful! The product content will now be available.");
-    
-    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage
-    if (key === "echelon") {
-        localStorage.setItem('mb-legacy-bought-echelon', 'true');
-        currentUser.boughtEchelon = true;
-        showEchelonReport();
-    }
-    if (key === "command") {
-        localStorage.setItem('mb-legacy-bought-command', 'true');
-        currentUser.boughtCommand = true;
-        showLockedContent("command");
-    }
-})
+                    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage
+                    if (key === "echelon") {
+                        localStorage.setItem('mb-legacy-bought-echelon', 'true');
+                        currentUser.boughtEchelon = true;
+                        showEchelonReport();
+                    }
                     if (key === "command") {
                         localStorage.setItem('mb-legacy-bought-command', 'true');
                         currentUser.boughtCommand = true;

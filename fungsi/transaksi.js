@@ -1,13 +1,3 @@
-// ========== POPUP PENGESAHAN SEBELUM BELI ==========
-window.confirmAndBuy = function(key, amount) {
-    var productName = (key === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
-    var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
-    
-    if (confirm(message)) {
-        buyProduct(key, amount);
-    }
-};
-
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");

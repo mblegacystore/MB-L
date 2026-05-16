@@ -297,8 +297,8 @@ h1 {
 
 /* ===== FOOTER – ANIMASI MERAH MUDA (SOFT RED) ===== */
 @keyframes warningBlink {
-    0%, 100% { background-color: rgba(180, 60, 60, 0.7); border-color: #FF8888; box-shadow: 0 0 20px rgba(255, 100, 100, 0.5); }
-    50% { background-color: rgba(220, 80, 80, 0.8); border-color: #FFAAAA; box-shadow: 0 0 30px rgba(255, 120, 120, 0.7); }
+    0%, 100% { background-color: rgba(200, 0, 0, 0.8); border-color: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.9); }
+    50% { background-color: rgba(255, 50, 50, 0.9); border-color: #ff5555; box-shadow: 0 0 45px rgba(255,0,0,1.0); }
 }
 
 .footer-frame {

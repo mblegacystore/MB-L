@@ -164,21 +164,6 @@
             td.style.background='transparent'; td.style.color='#666';
         }
     };
-    
-    // ========== DEBUG ALERT (A2U) ==========
-    setTimeout(function() {
-        if (typeof requestPayout === 'function') {
-            alert("✅ SUCCESS: requestPayout function is READY");
-        } else {
-            alert("❌ ERROR: requestPayout function NOT FOUND! Check transaksi.js");
-        }
-        
-        if (typeof currentUser !== 'undefined') {
-            alert("currentUser exists: " + (currentUser ? "Logged in" : "Not logged in"));
-        } else {
-            alert("currentUser variable not found");
-        }
-    }, 2000);
 </script>
 </body>
 </html>

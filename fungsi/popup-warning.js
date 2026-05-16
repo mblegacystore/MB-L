@@ -1,22 +1,19 @@
-// Fungsi untuk sisipkan popup di atas PIONEER REWARD (tanpa memusnahkan elemen asal)
+// ============================================
+// POPUP WARNING (SEBELUM A2U)
+// ============================================
+
 function insertWarningPopup() {
-    // Cari container PIONEER REWARD
     var payoutContainer = document.getElementById('payout-content');
     if (!payoutContainer) return;
-
-    // Cek sama ada popup sudah wujud (elak duplicate)
     if (document.getElementById('warningPopup')) return;
 
-    // Simpan rujukan ke card asal
     var originalCard = payoutContainer.querySelector('.product-card');
     if (!originalCard) return;
 
-    // Disable card asal (supaya pengguna kena akui dulu)
     originalCard.style.opacity = '0.5';
     originalCard.style.pointerEvents = 'none';
     originalCard.style.transition = '0.2s';
 
-    // HTML untuk popup
     var popupDiv = document.createElement('div');
     popupDiv.id = 'warningPopup';
     popupDiv.style.background = 'rgba(255,215,0,0.1)';
@@ -34,10 +31,8 @@ function insertWarningPopup() {
         <button id="cancelBtn" style="margin-top:10px; margin-left:8px; background:transparent; color:#aaa; border:1px solid #aaa; padding:5px 14px; border-radius:20px; font-size:0.75rem; cursor:pointer;">❌ Cancel</button>
     `;
 
-    // Sisipkan popup di atas card asal
     payoutContainer.insertBefore(popupDiv, originalCard);
 
-    // Popup logic
     var understoodBtn = document.getElementById('understoodBtn');
     var cancelBtn = document.getElementById('cancelBtn');
     var warningPopup = document.getElementById('warningPopup');
@@ -52,11 +47,9 @@ function insertWarningPopup() {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function() {
             warningPopup.style.display = 'none';
-            // Card tetap disabled (tak boleh claim)
         });
     }
 
-    // Popup 2 bahasa (EN/MS)
     function updatePopupLanguage() {
         var currentLang = localStorage.getItem('mb-legacy-lang') || 'en';
         var title = document.getElementById('warningTitle');
@@ -80,7 +73,6 @@ function insertWarningPopup() {
         }
     }
 
-    // Override switchLanguage (selaras dengan popup)
     var originalSwitchLanguage = window.switchLanguage;
     if (typeof originalSwitchLanguage === 'function') {
         window.switchLanguage = function(lang) {
@@ -92,7 +84,48 @@ function insertWarningPopup() {
     updatePopupLanguage();
 }
 
-// Jalankan popup selepas page siap
+// ============================================
+// POPUP SUCCESS (SELEPAS A2U BERJAYA)
+// ============================================
+
+function showSuccessPopup(title, message, buttonText) {
+    // Buang popup lama jika ada
+    var existingPopup = document.getElementById('customSuccessPopup');
+    if (existingPopup) existingPopup.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'customSuccessPopup';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+    modal.style.zIndex = '1000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+
+    modal.innerHTML = `
+        <div style="background:#0d0d0d; border:2px solid #FFD700; padding:25px; max-width:320px; width:90%; text-align:center; border-radius:8px;">
+            <h3 style="color:#FFD700; margin-bottom:15px;">${title}</h3>
+            <p style="color:#ddd; margin-bottom:20px; line-height:1.5;">${message}</p>
+            <button onclick="this.closest('#customSuccessPopup').remove()" style="background:#FFD700; color:#000; border:none; padding:10px 20px; font-weight:bold; border-radius:4px; cursor:pointer;">${buttonText}</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Tutup jika klik luar popup
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ============================================
+// INIT
+// ============================================
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', insertWarningPopup);
 } else {

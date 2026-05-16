@@ -115,7 +115,20 @@ async function requestPayout() {
             },
             onReadyForServerCompletion: function(id, txid) {
                 fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) })
-                .then(function() { updateStatus("0.1 Pi dihantar!"); })
+                .then(function() { 
+                    updateStatus("0.1 Pi dihantar!");
+                    
+                    // ✅ POPUP SUCCESS A2U
+                    if (typeof showSuccessPopup === 'function') {
+                        showSuccessPopup(
+                            "✅ REWARD RECEIVED!",
+                            "0.1 Test-Pi has been sent to your wallet.",
+                            "OK"
+                        );
+                    } else {
+                        alert("0.1 Test-Pi has been sent to your wallet.");
+                    }
+                })
                 .catch(async function() {
                     await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
@@ -125,4 +138,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-                                                                          }
+}

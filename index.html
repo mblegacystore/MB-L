@@ -34,10 +34,13 @@
     <button id="tab-merchant" onclick="switchTab('merchant')" style="flex:1; padding: 10px; background: transparent; color: #666; border: 1px solid #666; font-weight: bold; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; border-radius: 2px;">🛡️ Merchant Vault</button>
 </div>
 
-<!-- ===== BUTANG LOGIN (DI ATAS - TAMBAH EMOJI) ===== -->
+<!-- ===== KOTAK STATUS (DI ATAS) ===== -->
+<div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
+
+<!-- ===== BUTANG LOGIN (DI ATAS) ===== -->
 <button id="btn-login" class="golden-btn" onclick="doLogin()">🔑 CONNECT ACCOUNT</button>
 
-<!-- ===== PIONEER REWARD (CLAIM A2U) DI ATAS ===== -->
+<!-- ===== PIONEER REWARD (CLAIM A2U) ===== -->
 <div class="treasury-section" id="payout-content">
     <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
         <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
@@ -83,7 +86,7 @@
         </div>
     </div>
 
-    <div class="product-card" onclick="buyProduct('echelon',1)">
+    <div class="product-card" onclick="confirmAndBuy('echelon',1)">
         <div class="product-img-placeholder">II</div>
         <div class="product-info">
             <h3 id="title-echelon">THE ECHELON BRIEFING PACK</h3>
@@ -92,7 +95,7 @@
         </div>
     </div>
 
-    <div class="product-card" onclick="buyProduct('command',5)">
+    <div class="product-card" onclick="confirmAndBuy('command',5)">
         <div class="product-img-placeholder">III</div>
         <div class="product-info">
             <h3 id="title-command">THE COMMAND CENTER SUITE</h3>
@@ -101,11 +104,6 @@
         </div>
     </div>
 </div>
-
-<div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
-
-<button id="btn-pay1" class="golden-btn" disabled onclick="buyProduct('echelon',1)">PAY 1.0 PI</button>
-<button id="btn-pay10" class="golden-btn" disabled onclick="buyProduct('command',5)">PAY 5 PI</button>
 
 <!-- MODAL -->
 <div id="productModal" class="modal">
@@ -141,6 +139,16 @@
     if (window.switchLanguage) {
         switchLanguage(savedLang);
     }
+    
+    // Fungsi popup pengesahan sebelum beli produk berbayar
+    window.confirmAndBuy = function(productKey, amount) {
+        var productName = (productKey === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
+        var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
+        
+        if (confirm(message)) {
+            buyProduct(productKey, amount);
+        }
+    };
 
     window.switchTab = function(tab) {
         var d = document.getElementById('digital-content');
@@ -148,18 +156,16 @@
         var m = document.getElementById('merchant-content');
         var s = document.getElementById('stickyStatus');
         var l = document.getElementById('btn-login');
-        var b1 = document.getElementById('btn-pay1');
-        var b10 = document.getElementById('btn-pay10');
         var td = document.getElementById('tab-digital');
         var tm = document.getElementById('tab-merchant');
         if (tab === 'digital') {
             d.style.display='block'; p.style.display='block'; m.style.display='none';
-            s.style.display='block'; l.style.display='block'; b1.style.display='block'; b10.style.display='block';
+            s.style.display='block'; l.style.display='block';
             td.style.background='#FFD700'; td.style.color='#000';
             tm.style.background='transparent'; tm.style.color='#666';
         } else {
             d.style.display='none'; p.style.display='none'; m.style.display='block';
-            s.style.display='none'; l.style.display='none'; b1.style.display='none'; b10.style.display='none';
+            s.style.display='none'; l.style.display='none';
             tm.style.background='#FFD700'; tm.style.color='#000';
             td.style.background='transparent'; td.style.color='#666';
         }

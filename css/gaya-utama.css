@@ -109,24 +109,26 @@ h1 {
     padding-bottom: 10px;
 }
 
+/* ===== PRODUCT CARD – BORDER EMAS KONSISTEN ===== */
 .product-card {
-    border: 1px solid #333;
+    border: 1px solid #FFD700;  /* ← emas, bukan #333 */
     padding: 0;
     margin-bottom: 15px;
     text-align: left;
-    background: rgba(255,255,255,0.02);
+    background: rgba(255,215,0,0.02);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .product-card:hover {
     border-color: #FFD700;
-    box-shadow: 0 0 15px rgba(255,215,0,0.2);
+    box-shadow: 0 0 15px rgba(255,215,0,0.3);
 }
 
+/* ===== FREE BANNER – HITAM EMAS (BUKAN HIJAU) ===== */
 .free-banner {
-    background: #27ae60;
-    color: #fff;
+    background: #FFD700;  /* ← emas */
+    color: #000;          /* ← hitam */
     text-align: center;
     padding: 5px;
     font-weight: bold;
@@ -170,6 +172,7 @@ h1 {
     font-weight: bold;
 }
 
+/* ===== MODAL ===== */
 .modal {
     display: none;
     position: fixed;
@@ -235,6 +238,7 @@ h1 {
     color: #fff;
 }
 
+/* ===== BUTANG UTAMA ===== */
 .golden-btn {
     display: block;
     width: 85%;
@@ -269,6 +273,7 @@ h1 {
     animation: none;
 }
 
+/* ===== STICKY STATUS ===== */
 #stickyStatus {
     width: 100%;
     max-width: 400px;
@@ -290,9 +295,10 @@ h1 {
     word-break: break-all;
 }
 
-@keyframes warningBlink {
-    0%, 100% { background-color: rgba(200, 0, 0, 0.8); border-color: #ff0000; box-shadow: 0 0 25px rgba(255,0,0,0.9); }
-    50% { background-color: rgba(255, 50, 50, 0.9); border-color: #ff5555; box-shadow: 0 0 45px rgba(255,0,0,1.0); }
+/* ===== FOOTER – ANIMASI EMAS (BUKAN MERAH) ===== */
+@keyframes goldBlink {
+    0%, 100% { background-color: #1a1a1a; border-color: #FFD700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+    50% { background-color: #2a2a00; border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
 }
 
 .footer-frame {
@@ -305,7 +311,7 @@ h1 {
     width: 100%;
     border-radius: 6px;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-    animation: warningBlink 0.8s infinite;
+    animation: goldBlink 1.5s infinite;
 }
 
 .footer-frame p {

@@ -1,3 +1,13 @@
+// ========== POPUP PENGESAHAN SEBELUM BELI ==========
+window.confirmAndBuy = function(key, amount) {
+    var productName = (key === 'echelon') ? 'THE ECHELON BRIEFING PACK' : 'THE COMMAND CENTER SUITE';
+    var message = "Are you sure you want to purchase " + productName + " for " + amount + " Pi?\n\nThis is a Testnet transaction. No real Pi will be deducted.";
+    
+    if (confirm(message)) {
+        buyProduct(key, amount);
+    }
+};
+
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     updateStatus("Menyelesaikan pembayaran tertunda...");
@@ -79,18 +89,39 @@ async function buyProduct(key, amount) {
                 }).then(function() {
                     updateStatus("Berjaya!");
                     
-                    // ✅ POPUP SELEPAS U2A BERJAYA
-                    alert("✅ Purchase successful! The product content will now be available.");
-                    
-                    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage
+                    // 🔥 SIMPAN STATUS PEMBELIAN KE localStorage (DAHULU)
                     if (key === "echelon") {
                         localStorage.setItem('mb-legacy-bought-echelon', 'true');
                         currentUser.boughtEchelon = true;
+                        
+                        // ✅ Popup hitam-emas (selepas simpan localStorage)
+                        if (typeof showSuccessPopup === 'function') {
+                            showSuccessPopup(
+                                "✅ PURCHASE SUCCESSFUL!",
+                                "THE ECHELON BRIEFING PACK is now available.\nThank you for your support.",
+                                "OK"
+                            );
+                        } else {
+                            alert("Purchase successful! Content is now available.");
+                        }
+                        
                         showEchelonReport();
                     }
                     if (key === "command") {
                         localStorage.setItem('mb-legacy-bought-command', 'true');
                         currentUser.boughtCommand = true;
+                        
+                        // ✅ Popup hitam-emas (selepas simpan localStorage)
+                        if (typeof showSuccessPopup === 'function') {
+                            showSuccessPopup(
+                                "✅ PURCHASE SUCCESSFUL!",
+                                "THE COMMAND CENTER SUITE is now available.\nThank you for your support.",
+                                "OK"
+                            );
+                        } else {
+                            alert("Purchase successful! Content is now available.");
+                        }
+                        
                         showLockedContent("command");
                     }
                 }).catch(async function() {
@@ -107,6 +138,13 @@ async function buyProduct(key, amount) {
 // ========== CLAIM A2U ==========
 async function requestPayout() {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    
+    // ✅ CEK: Jika sudah pernah claim, jangan proses lagi
+    if (localStorage.getItem('mb-legacy-a2u-claimed') === 'true') {
+        updateStatus("You have already claimed your reward.");
+        return;
+    }
+    
     await bersihkanSebelumBayar();
     updateStatus("Mencipta A2U...");
     Pi.createPayment(
@@ -120,6 +158,9 @@ async function requestPayout() {
                 fetch("/api/bayar-keluar.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) })
                 .then(function() { 
                     updateStatus("0.1 Pi dihantar!");
+                    
+                    // ✅ SIMPAN STATUS CLAIM (supaya popup tidak muncul lagi)
+                    localStorage.setItem('mb-legacy-a2u-claimed', 'true');
                     
                     // ✅ POPUP SUCCESS A2U
                     if (typeof showSuccessPopup === 'function') {
@@ -141,4 +182,4 @@ async function requestPayout() {
             onError: function(e) { updateStatus("Ralat: " + e.message); }
         }
     );
-}
+                        }

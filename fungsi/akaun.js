@@ -3,15 +3,17 @@ async function doLogin() {
     try {
         const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
         
-        // Simpan semua kemungkinan UID
+        // ✅ PASTIKAN UID DISIMPAN DENGAN BETUL
         currentUser = {
-            uid1: auth.user.uid,
-            uid2: auth.uid,
-            uid3: auth.user.id,
+            uid: auth.user.uid,
             username: auth.user.username,
             wallet_address: auth.user.wallet_address || ""
         };
         
+        // ✅ SIMPAN KE localStorage (PENTING!)
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Pulihkan status pembelian
         if (localStorage.getItem('mb-legacy-bought-echelon') === 'true') currentUser.boughtEchelon = true;
         if (localStorage.getItem('mb-legacy-bought-command') === 'true') currentUser.boughtCommand = true;
         
@@ -19,16 +21,16 @@ async function doLogin() {
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
         
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        
-        // Alert untuk tunjuk semua UID
-        alert("UID1 (auth.user.uid): " + currentUser.uid1 + "\nUID2 (auth.uid): " + currentUser.uid2 + "\nUID3 (auth.user.id): " + currentUser.uid3);
+        // ✅ DEBUG: ALERT UNTUK PASTIKAN
+        alert("Login berjaya! UID disimpan: " + currentUser.uid);
         
     } catch (e) {
         updateStatus("Login gagal: " + e.message);
+        alert("Login error: " + e.message);
     }
 }
 
+// ✅ RESTORE SESSION (guna untuk welcome back)
 const saved = localStorage.getItem('currentUser');
 if (saved) {
     try {

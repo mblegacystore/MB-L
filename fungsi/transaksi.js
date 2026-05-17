@@ -140,10 +140,11 @@ async function requestPayout() {
         return;
     }
     
+    // ✅ GUNA USERNAME, BUKAN UID
     const userId = user.username;
     
     if (!userId) {
-        updateStatus("ERROR: No user ID found! Please re-login.");
+        updateStatus("ERROR: No username found! Please re-login.");
         return;
     }
     
@@ -153,8 +154,7 @@ async function requestPayout() {
     updateStatus("Memproses ganjaran...");
     
     try {
-        alert("UID dihantar: " + userId);
-const response = await fetch("/api/bayar-keluar.js", {
+        const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -181,4 +181,4 @@ const response = await fetch("/api/bayar-keluar.js", {
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-    }
+                }

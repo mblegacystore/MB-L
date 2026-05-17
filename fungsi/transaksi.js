@@ -80,7 +80,6 @@ async function buyProduct(key, amount) {
                     updateStatus("Berjaya!");
                     
                     if (key === "echelon") {
-                        // ✅ Popup hanya SEKALI (jika belum pernah beli)
                         if (!localStorage.getItem('mb-legacy-bought-echelon')) {
                             if (typeof showSuccessPopup === 'function') {
                                 showSuccessPopup(
@@ -97,7 +96,6 @@ async function buyProduct(key, amount) {
                         showEchelonReport();
                     }
                     if (key === "command") {
-                        // ✅ Popup hanya SEKALI (jika belum pernah beli)
                         if (!localStorage.getItem('mb-legacy-bought-command')) {
                             if (typeof showSuccessPopup === 'function') {
                                 showSuccessPopup(
@@ -124,22 +122,33 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (DIBETULKAN) ==========
+// ========== CLAIM A2U (BACA DARI LOCALSTORAGE - SELAMAT) ==========
 async function requestPayout() {
-    if (!currentUser) { 
+    // ✅ AMBIL UID TERUS DARI localStorage (tak bergantung pada currentUser global)
+    let userData = localStorage.getItem('currentUser');
+    
+    if (!userData) {
         updateStatus("Sila login dahulu.");
-        return; 
+        return;
     }
     
-    // ✅ Bersihkan payment tergendala dulu
-    await bersihkanSebelumBayar();
+    let user;
+    try {
+        user = JSON.parse(userData);
+    } catch(e) {
+        updateStatus("Data user rosak. Sila login semula.");
+        return;
+    }
     
-    const userId = currentUser.uid;
+    const userId = user.uid;
     
     if (!userId) {
         updateStatus("ERROR: No user ID found! Please re-login.");
         return;
     }
+    
+    // ✅ Bersihkan payment tergendala dulu
+    await bersihkanSebelumBayar();
     
     updateStatus("Memproses ganjaran...");
     
@@ -171,4 +180,4 @@ async function requestPayout() {
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-                        }
+                }

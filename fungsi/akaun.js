@@ -3,9 +3,11 @@ async function doLogin() {
     try {
         const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
         
-        // ✅ PERUBAHAN: guna auth.uid (bukan auth.user.uid)
+        // Simpan semua kemungkinan UID
         currentUser = {
-            uid: auth.uid,                          // ← UBAH SINI
+            uid1: auth.user.uid,
+            uid2: auth.uid,
+            uid3: auth.user.id,
             username: auth.user.username,
             wallet_address: auth.user.wallet_address || ""
         };
@@ -18,6 +20,9 @@ async function doLogin() {
         tryEnablePaymentButtons();
         
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Alert untuk tunjuk semua UID
+        alert("UID1 (auth.user.uid): " + currentUser.uid1 + "\nUID2 (auth.uid): " + currentUser.uid2 + "\nUID3 (auth.user.id): " + currentUser.uid3);
         
     } catch (e) {
         updateStatus("Login gagal: " + e.message);

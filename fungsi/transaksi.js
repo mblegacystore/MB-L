@@ -153,7 +153,8 @@ async function requestPayout() {
     updateStatus("Memproses ganjaran...");
     
     try {
-        const response = await fetch("/api/bayar-keluar.js", {
+        alert("UID dihantar: " + userId);
+const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 

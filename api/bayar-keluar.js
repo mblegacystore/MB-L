@@ -15,21 +15,37 @@ export default async function handler(req, res) {
     
     const BASE_URL = "https://api.minepi.com/v2";
     
-    // ========== 1. HANDLE EXPIRED/PENDING PAYMENT (CUCI) ==========
+    // ========== 1. HANDLE EXPIRED/PENDING (CUCI) ==========
     if (action === 'clean' && paymentId) {
         try {
-            // Cuba cancel payment yang tergendala
-            await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
-                method: "POST",
+            // Semak status payment dulu
+            const statusRes = await fetch(`${BASE_URL}/payments/${paymentId}`, {
                 headers: { "Authorization": `Key ${API_KEY}` }
             });
-            return res.status(200).json({ success: true, message: "Payment cleaned" });
+            const paymentStatus = await statusRes.json();
+            
+            // Jika sudah ada txid, jangan cancel – complete sahaja
+            if (paymentStatus.transaction?.id) {
+                await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
+                    method: "POST",
+                    headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ txid: paymentStatus.transaction.id })
+                });
+                return res.status(200).json({ success: true, message: "Payment completed" });
+            } else {
+                // Cancel payment yang tergendala
+                await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
+                    method: "POST",
+                    headers: { "Authorization": `Key ${API_KEY}` }
+                });
+                return res.status(200).json({ success: true, message: "Payment cleaned" });
+            }
         } catch (error) {
             return res.status(500).json({ error: "Gagal bersihkan payment" });
         }
     }
     
-    // ========== 2. HANDLE COMPLETE (untuk U2A compatibility) ==========
+    // ========== 2. HANDLE COMPLETE (U2A compatibility) ==========
     if (action === 'complete' && paymentId && txid) {
         try {
             await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
@@ -53,28 +69,27 @@ export default async function handler(req, res) {
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount, memo: memo || "A2U Reward", uid })
+            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Reward", uid })
         });
         
         const createData = await createRes.json();
+        
         if (!createRes.ok) {
             // Jika payment sudah wujud (pending/expired)
             if (createData.identifier) {
-                // Cuba bersihkan dulu
+                // Cuba bersihkan (panggil fungsi clean)
                 await fetch(`${BASE_URL}/payments/${createData.identifier}/cancel`, {
                     method: "POST",
                     headers: { "Authorization": `Key ${API_KEY}` }
                 });
-                // Retry (panggil semula fungsi ini)
-                return handler(req, res);
             }
             return res.status(400).json({ error: createData.error || "Gagal cipta payment" });
         }
         
-        const paymentId = createData.identifier;
+        const newPaymentId = createData.identifier;
         
         // STEP 2: SUBMIT PAYMENT
-        const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
+        const submitRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/submit`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ seed: WALLET_SEED })
@@ -85,13 +100,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: submitData.error || "Gagal submit payment" });
         }
         
-        const txid = submitData.txid;
+        const newTxid = submitData.txid;
         
         // STEP 3: COMPLETE PAYMENT
-        const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
+        const completeRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/complete`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid })
+            body: JSON.stringify({ txid: newTxid })
         });
         
         if (!completeRes.ok) {
@@ -99,7 +114,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: completeData.error || "Gagal complete payment" });
         }
         
-        return res.status(200).json({ success: true, paymentId, txid });
+        return res.status(200).json({ success: true, paymentId: newPaymentId, txid: newTxid });
         
     } catch (error) {
         console.error("A2U Error:", error);

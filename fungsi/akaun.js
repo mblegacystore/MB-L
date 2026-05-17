@@ -1,6 +1,3 @@
-// Pembolehubah Global (Pastikan ini selaras dengan kod anda yang lain)
-let currentUser = null;
-
 /**
  * Fungsi Utama untuk Log Masuk (Autentikasi)
  * @param {boolean} isSilent - Jika true, ia akan berjalan di belakang tabir tanpa mengubah UI status log masuk
@@ -74,7 +71,6 @@ async function restoreSession() {
         tryEnablePaymentButtons();
         
         // LANGKAH 2: Segarkan sambungan sesi dengan Pi Server secara senyap (Silent Refresh)
-        // Langkah ini amat penting bagi mengelakkan ralat A2U "user not found" di Vercel Backend
         console.log("Menyegarkan sesi aktif dengan pelayan Pi Network...");
         await doLogin(true); 
         

@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+    // Hanya terima POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -14,7 +15,9 @@ export default async function handler(req, res) {
     
     const BASE_URL = "https://api.minepi.com/v2";
     
-    // ========== 1. HANDLE EXPIRED/PENDING (CUCI) ==========
+    // ============================================================
+    // 1. HANDLE EXPIRED/PENDING (CUCI) - KEKAL ASAL 100%
+    // ============================================================
     if (action === 'clean' && paymentId) {
         try {
             const statusRes = await fetch(`${BASE_URL}/payments/${paymentId}`, {
@@ -41,7 +44,9 @@ export default async function handler(req, res) {
         }
     }
     
-    // ========== 2. HANDLE COMPLETE ==========
+    // ============================================================
+    // 2. HANDLE COMPLETE (U2A) - KEKAL ASAL 100%
+    // ============================================================
     if (action === 'complete' && paymentId && txid) {
         try {
             await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
@@ -55,74 +60,179 @@ export default async function handler(req, res) {
         }
     }
     
-    // ========== 3. A2U: VERSI DEBUG RINGKAS ==========
+    // ============================================================
+    // 3. A2U: CREATE, SUBMIT, COMPLETE (DITAMBAHBAIK)
+    // ============================================================
     if (!uid || !amount) {
         return res.status(400).json({ error: "Data tak lengkap. uid dan amount diperlukan." });
     }
-
-    console.log(`[DEBUG A2U] Menerima request untuk UID: ${uid}`);
-
+    
     try {
-        // --- LANGKAH 1: Cuba CREATE Payment ---
-        console.log(`[DEBUG A2U] Mencuba CREATE payment...`);
+        // =====================================================
+        // LANGKAH 0: TUKAR USERNAME KEPADA UID HASH
+        // =====================================================
+        let targetUid = uid;
+        
+        if (uid.length < 30) {
+            console.log(`[A2U] Mengesan username: "${uid}", mencari UID hash...`);
+            
+            try {
+                const userRes = await fetch(`${BASE_URL}/users?username=${uid}`, {
+                    headers: { "Authorization": `Key ${API_KEY}` }
+                });
+                
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    if (userData.uid) {
+                        targetUid = userData.uid;
+                        console.log(`[A2U] UID hash ditemui: ${targetUid.substring(0, 10)}...`);
+                    }
+                }
+            } catch (e) {
+                console.log(`[A2U] Gagal cari UID hash: ${e.message}`);
+            }
+        }
+        
+        // =====================================================
+        // PRA-CLEANUP: Cari & bersihkan pembayaran A2U lama
+        // =====================================================
+        try {
+            const searchRes = await fetch(
+                `${BASE_URL}/payments?uid=${targetUid}&direction=app_to_user`, {
+                    headers: { "Authorization": `Key ${API_KEY}` }
+                }
+            );
+            
+            if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                const payments = searchData.payments || [];
+                
+                for (let p of payments) {
+                    if (p.status?.developer_completed || p.status?.cancelled) continue;
+                    
+                    console.log(`[A2U Cleanup] Membersihkan: ${p.identifier}`);
+                    
+                    try {
+                        if (p.transaction?.txid) {
+                            await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
+                                method: "POST",
+                                headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+                                body: JSON.stringify({ txid: p.transaction.txid })
+                            });
+                            continue;
+                        }
+                        
+                        const subRes = await fetch(`${BASE_URL}/payments/${p.identifier}/submit`, {
+                            method: "POST",
+                            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+                            body: JSON.stringify({ seed: WALLET_SEED })
+                        });
+                        
+                        if (subRes.ok) {
+                            const subData = await subRes.json();
+                            if (subData.txid) {
+                                await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
+                                    method: "POST",
+                                    headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+                                    body: JSON.stringify({ txid: subData.txid })
+                                });
+                                continue;
+                            }
+                        }
+                        
+                        await fetch(`${BASE_URL}/payments/${p.identifier}/cancel`, {
+                            method: "POST",
+                            headers: { "Authorization": `Key ${API_KEY}` }
+                        });
+                    } catch (e) {
+                        console.log(`[A2U Cleanup] Gagal: ${e.message}`);
+                    }
+                }
+            }
+        } catch (e) {
+            console.log(`[A2U Cleanup] Ralat carian: ${e.message}`);
+        }
+        
+        // =====================================================
+        // STEP 1: CREATE PAYMENT
+        // =====================================================
+        console.log(`[A2U] CREATE payment untuk UID: ${targetUid.substring(0, 10)}...`);
+        
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Reward", uid })
+            body: JSON.stringify({ 
+                amount: parseFloat(amount), 
+                memo: memo || "A2U Reward", 
+                uid: targetUid 
+            })
         });
+        
         const createData = await createRes.json();
         
         if (!createRes.ok) {
-            console.error(`[GAGAL CREATE] Status: ${createRes.status}, Body:`, JSON.stringify(createData));
+            console.error(`[A2U CREATE GAGAL]`, JSON.stringify(createData));
+            
+            if (createData.identifier) {
+                await fetch(`${BASE_URL}/payments/${createData.identifier}/cancel`, {
+                    method: "POST",
+                    headers: { "Authorization": `Key ${API_KEY}` }
+                });
+            }
             return res.status(400).json({ 
-                error: "CREATE GAGAL: " + (createData.message || createData.error || "User not found"),
-                debug: createData 
+                error: createData.message || createData.error || "Gagal cipta payment" 
             });
         }
         
-        console.log(`[DEBUG A2U] CREATE Berjaya. ID: ${createData.identifier}`);
+        const newPaymentId = createData.identifier;
+        console.log(`[A2U] Payment dicipta: ${newPaymentId}`);
         
-        // --- LANGKAH 2: Cuba SUBMIT Payment ---
-        console.log(`[DEBUG A2U] Mencuba SUBMIT payment...`);
-        const submitRes = await fetch(`${BASE_URL}/payments/${createData.identifier}/submit`, {
+        // =====================================================
+        // STEP 2: SUBMIT PAYMENT
+        // =====================================================
+        const submitRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/submit`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ seed: WALLET_SEED })
         });
-        const submitData = await submitRes.json();
         
+        const submitData = await submitRes.json();
         if (!submitRes.ok) {
-            console.error(`[GAGAL SUBMIT] Status: ${submitRes.status}, Body:`, JSON.stringify(submitData));
+            console.error(`[A2U SUBMIT GAGAL]`, JSON.stringify(submitData));
             return res.status(400).json({ 
-                error: "SUBMIT GAGAL: " + (submitData.message || submitData.error),
-                debug: submitData 
+                error: submitData.message || submitData.error || "Gagal submit payment" 
             });
         }
         
-        console.log(`[DEBUG A2U] SUBMIT Berjaya. TxID: ${submitData.txid}`);
+        const newTxid = submitData.txid;
+        console.log(`[A2U] Submitted: ${newTxid}`);
         
-        // --- LANGKAH 3: Cuba COMPLETE Payment ---
-        console.log(`[DEBUG A2U] Mencuba COMPLETE payment...`);
-        const completeRes = await fetch(`${BASE_URL}/payments/${createData.identifier}/complete`, {
+        // =====================================================
+        // STEP 3: COMPLETE PAYMENT
+        // =====================================================
+        const completeRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/complete`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid: submitData.txid })
+            body: JSON.stringify({ txid: newTxid })
         });
-        const completeData = await completeRes.json();
         
         if (!completeRes.ok) {
-            console.error(`[GAGAL COMPLETE] Status: ${completeRes.status}, Body:`, JSON.stringify(completeData));
+            const completeData = await completeRes.json();
+            console.error(`[A2U COMPLETE GAGAL]`, JSON.stringify(completeData));
             return res.status(400).json({ 
-                error: "COMPLETE GAGAL: " + (completeData.message || completeData.error),
-                debug: completeData 
+                error: completeData.message || completeData.error || "Gagal complete payment" 
             });
         }
         
-        console.log(`[DEBUG A2U] BERJAYA! Payment selesai.`);
-        return res.status(200).json({ success: true });
-
+        console.log(`[A2U] BERJAYA! Payment: ${newPaymentId}`);
+        return res.status(200).json({ 
+            success: true, 
+            paymentId: newPaymentId, 
+            txid: newTxid 
+        });
+        
     } catch (error) {
-        console.error("[DEBUG A2U] Ralat tidak dijangka:", error);
+        console.error("[A2U] Ralat tidak dijangka:", error);
         return res.status(500).json({ error: error.message });
     }
-}
+                    }

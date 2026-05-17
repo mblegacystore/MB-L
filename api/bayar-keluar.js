@@ -65,14 +65,14 @@ export default async function handler(req, res) {
     // ========== TAMAT PRA-PEMBERSIHAN ==========
     
     try {
-        // ========== LANGKAH 1: CIPTA PEMBAYARAN A2U ==========
+        // ========== LANGKAH 1: CIPTA PEMBAYARAN (KOD ASAL) ==========
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 amount: parseFloat(amount), 
                 memo: memo || "A2U Debug", 
-                uid: uid,   // ✅ BETUL: guna "uid", bukan "recipient"
+                recipient: uid,
                 metadata: { source: "claim_reward" }
             })
         });
@@ -129,11 +129,14 @@ export default async function handler(req, res) {
             body: JSON.stringify({ txid })
         });
         
+        const completeData = await completeRes.json();
+        
         // Walaupun complete gagal, txid sudah ada — Pi tetap sampai
         return res.status(200).json({
             success: true,
             ok: true,
-            message: "0.1 Pi berjaya dihantar!",
+            status: completeRes.ok ? 200 : completeRes.status,
+            message: completeRes.ok ? "0.1 Pi berjaya dihantar!" : "Pi dihantar (pengesahan tertunda)",
             paymentId: paymentId,
             txid: txid,
             uid_sent: uid

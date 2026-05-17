@@ -10,32 +10,22 @@ export default async function handler(req, res) {
     }
     
     const API_KEY = process.env.PI_API_KEY_TESTNET;
-    
-    if (!API_KEY) {
-        return res.status(500).json({ error: "API Key missing" });
-    }
-    
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
     
-    if (!WALLET_SEED) {
-        return res.status(500).json({ error: "Wallet Seed missing" });
-    }
+    if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
+    if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
     
     const BASE_URL = "https://api.minepi.com/v2";
     
-    // ========== PRA-PEMBERSIHAN AUTOMATIK ==========
-    // Selesaikan semua pembayaran A2U tertunggak sebelum cipta baru
+    // ========== PRA-PEMBERSIHAN ==========
     try {
-        const incompleteRes = await fetch(
-            `${BASE_URL}/payments?direction=app_to_user`,
-            { headers: { "Authorization": `Key ${API_KEY}` } }
-        );
-        if (incompleteRes.ok) {
-            const incompleteData = await incompleteRes.json();
-            const pendingPayments = incompleteData.payments || [];
-            for (const p of pendingPayments) {
+        const incRes = await fetch(`${BASE_URL}/payments?direction=app_to_user`, {
+            headers: { "Authorization": `Key ${API_KEY}` }
+        });
+        if (incRes.ok) {
+            const data = await incRes.json();
+            for (const p of (data.payments || [])) {
                 try {
-                    // Cuba submit
                     const sr = await fetch(`${BASE_URL}/payments/${p.identifier}/submit`, {
                         method: "POST",
                         headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -43,7 +33,6 @@ export default async function handler(req, res) {
                     });
                     const sd = await sr.json();
                     if (sd.txid) {
-                        // Cuba complete
                         await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
                             method: "POST",
                             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -51,7 +40,6 @@ export default async function handler(req, res) {
                         });
                     }
                 } catch {
-                    // Jika submit gagal, cuba cancel
                     try {
                         await fetch(`${BASE_URL}/payments/${p.identifier}/cancel`, {
                             method: "POST",
@@ -65,14 +53,14 @@ export default async function handler(req, res) {
     // ========== TAMAT PRA-PEMBERSIHAN ==========
     
     try {
-        // ========== LANGKAH 1: CIPTA PEMBAYARAN (KOD ASAL) ==========
+        // Langkah 1: Cipta
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 amount: parseFloat(amount), 
                 memo: memo || "A2U Debug", 
-                recipient: uid,
+                uid: uid,
                 metadata: { source: "claim_reward" }
             })
         });
@@ -82,18 +70,13 @@ export default async function handler(req, res) {
         if (!createRes.ok) {
             return res.status(400).json({
                 success: false,
-                ok: false,
-                status: createRes.status,
-                error: createData.message || createData.error || "Gagal cipta pembayaran",
-                fullResponse: createData,
-                uid_sent: uid
+                error: createData.message || "Gagal cipta pembayaran"
             });
         }
         
         const paymentId = createData.identifier;
-        // ========== TAMAT LANGKAH 1 ==========
         
-        // ========== LANGKAH 2: SUBMIT ==========
+        // Langkah 2: Submit
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -103,7 +86,6 @@ export default async function handler(req, res) {
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            // Gagal submit → batalkan pembayaran supaya tak jadi pending
             try {
                 await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
                     method: "POST",
@@ -113,41 +95,23 @@ export default async function handler(req, res) {
             
             return res.status(400).json({
                 success: false,
-                ok: false,
-                error: submitData.message || "Gagal submit pembayaran",
-                paymentId: paymentId
+                error: submitData.message || "Gagal submit"
             });
         }
         
-        const txid = submitData.txid;
-        // ========== TAMAT LANGKAH 2 ==========
-        
-        // ========== LANGKAH 3: COMPLETE ==========
-        const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
+        // Langkah 3: Complete
+        await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid })
+            body: JSON.stringify({ txid: submitData.txid })
         });
         
-        const completeData = await completeRes.json();
-        
-        // Walaupun complete gagal, txid sudah ada — Pi tetap sampai
         return res.status(200).json({
             success: true,
-            ok: true,
-            status: completeRes.ok ? 200 : completeRes.status,
-            message: completeRes.ok ? "0.1 Pi berjaya dihantar!" : "Pi dihantar (pengesahan tertunda)",
-            paymentId: paymentId,
-            txid: txid,
-            uid_sent: uid
+            message: "0.1 Pi berjaya dihantar!"
         });
-        // ========== TAMAT LANGKAH 3 ==========
         
     } catch (error) {
-        return res.status(500).json({ 
-            success: false, 
-            ok: false,
-            error: error.message 
-        });
+        return res.status(500).json({ success: false, error: error.message });
     }
 }

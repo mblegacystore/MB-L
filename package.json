@@ -9,5 +9,7 @@
   "keywords": ["pi-network", "commerce", "malaysia"],
   "author": "MB Legacy Store",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "pi-backend": "^0.1.3"
+  }
 }

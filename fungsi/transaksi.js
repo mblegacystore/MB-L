@@ -142,6 +142,7 @@ async function requestPayout() {
     
     // ✅ GUNA USERNAME, BUKAN UID
     const userId = user.username;
+alert("Username: " + userId + " | Wallet: " + user.wallet_address);
     
     if (!userId) {
         updateStatus("ERROR: No username found! Please re-login.");

@@ -140,7 +140,7 @@ async function requestPayout() {
         return;
     }
     
-    const userId = user.uid;
+    const userId = user.username;
     
     if (!userId) {
         updateStatus("ERROR: No user ID found! Please re-login.");

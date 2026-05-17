@@ -21,7 +21,12 @@ export default async function handler(req, res) {
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Debug", uid })
+            // ✅ DI SINI SAHAJA YANG BERUBAH: uid ditukar menjadi recipient: uid
+            body: JSON.stringify({ 
+                amount: parseFloat(amount), 
+                memo: memo || "A2U Debug", 
+                recipient: uid 
+            })
         });
         
         const createData = await createRes.json();

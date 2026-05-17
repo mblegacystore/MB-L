@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MB LEGACY STORE | Pi Commerce Malaysia</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <!-- ===== TAMBAHAN: transaksi.js dimuatkan awal sebagai sandaran ===== -->
+    <script src="fungsi/transaksi.js"></script>
     <link rel="stylesheet" href="css/gaya-utama.css">
 </head>
 <body>
@@ -135,6 +137,7 @@
 <script src="fungsi/bahasa.js"></script>
 <script src="fungsi/modal.js"></script>
 <script src="fungsi/popup-warning.js"></script>
+<!-- ===== YANG ASAL DI BAWAH: dikekalkan, tapi takkan jalan dua kali sebab fungsi dah declared ===== -->
 <script src="fungsi/transaksi.js"></script>
 <script>
     Pi.init({ version: "2.0", sandbox: true });

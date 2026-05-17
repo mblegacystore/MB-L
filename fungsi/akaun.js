@@ -1,11 +1,9 @@
-let currentUser = null;
-
 async function doLogin() {
     updateStatus("Menyambung...");
     try {
         const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
         
-        // ✅ HANYA PERUBAHAN: guna auth.user.uid (bukan auth.uid)
+        // ✅ GUNA STRUKTUR ASAL, TAPI AMBIL UID DARI auth.user.uid
         currentUser = {
             uid: auth.user.uid,                    // ← UID HASH untuk A2U
             username: auth.user.username,
@@ -19,12 +17,16 @@ async function doLogin() {
         updateStatus(currentUser.username);
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
+        
+        // Simpan ke localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
     } catch (e) {
         updateStatus("Login gagal: " + e.message);
     }
 }
 
-// RESTORE SESSION (KEKAL ASAL)
+// RESTORE SESSION (JIKA ADA)
 const saved = localStorage.getItem('currentUser');
 if (saved) {
     try {

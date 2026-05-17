@@ -1,3 +1,6 @@
+// Memory storage untuk track payment (ganti dengan database untuk production)
+const paymentStore = new Map();
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -14,20 +17,21 @@ export default async function handler(req, res) {
     
     const BASE_URL = "https://api.minepi.com/v2";
     
-    // ========== 1. HANDLE EXPIRED/PENDING (CUCI) ==========
+    // ========== HANDLE EXPIRED/PENDING ==========
     if (action === 'clean' && paymentId) {
         try {
             await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
                 method: "POST",
                 headers: { "Authorization": `Key ${API_KEY}` }
             });
+            paymentStore.delete(paymentId);
             return res.status(200).json({ success: true, message: "Payment cleaned" });
         } catch (error) {
             return res.status(500).json({ error: "Gagal bersihkan payment" });
         }
     }
     
-    // ========== 2. HANDLE COMPLETE (U2A) ==========
+    // ========== HANDLE COMPLETE (U2A) ==========
     if (action === 'complete' && paymentId && txid) {
         try {
             await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
@@ -35,15 +39,21 @@ export default async function handler(req, res) {
                 headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ txid })
             });
+            paymentStore.delete(paymentId);
             return res.status(200).json({ success: true, message: "Completed" });
         } catch (error) {
             return res.status(500).json({ error: "Gagal complete payment" });
         }
     }
     
-    // ========== 3. A2U: CREATE → SUBMIT → COMPLETE ==========
+    // ========== A2U: CREATE → SUBMIT → COMPLETE ==========
     if (!uid || !amount) {
         return res.status(400).json({ error: "Data tak lengkap" });
+    }
+    
+    // CEK: Elak double payment untuk user yang sama
+    if (paymentStore.has(`pending_${uid}`)) {
+        return res.status(400).json({ error: "Tunggu transaksi sebelum ini selesai." });
     }
     
     try {
@@ -61,6 +71,10 @@ export default async function handler(req, res) {
         
         const paymentId = createData.identifier;
         
+        // ✅ SIMPAN paymentId (seperti saranan PinoyQ8)
+        paymentStore.set(paymentId, { uid, amount, status: 'created' });
+        paymentStore.set(`pending_${uid}`, Date.now());
+        
         // SUBMIT
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: "POST",
@@ -70,10 +84,13 @@ export default async function handler(req, res) {
         
         const submitData = await submitRes.json();
         if (!submitRes.ok) {
+            paymentStore.delete(paymentId);
+            paymentStore.delete(`pending_${uid}`);
             return res.status(400).json({ error: submitData.error || "Gagal submit payment" });
         }
         
         const txid = submitData.txid;
+        paymentStore.set(paymentId, { uid, amount, status: 'submitted', txid });
         
         // COMPLETE
         const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
@@ -84,8 +101,14 @@ export default async function handler(req, res) {
         
         if (!completeRes.ok) {
             const completeData = await completeRes.json();
+            paymentStore.delete(paymentId);
+            paymentStore.delete(`pending_${uid}`);
             return res.status(400).json({ error: completeData.error || "Gagal complete payment" });
         }
+        
+        // ✅ Bersihkan storage selepas selesai
+        paymentStore.delete(paymentId);
+        paymentStore.delete(`pending_${uid}`);
         
         return res.status(200).json({ success: true, paymentId, txid });
         
@@ -93,4 +116,4 @@ export default async function handler(req, res) {
         console.error("A2U Error:", error);
         return res.status(500).json({ error: error.message });
     }
-                }
+}

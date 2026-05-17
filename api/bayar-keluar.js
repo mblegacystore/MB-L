@@ -1,123 +1,149 @@
-export default async function handler(req, res) {
-    // Hanya terima POST
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-    
-    const { uid, amount, memo, paymentId, action, txid } = req.body;
-    
-    const API_KEY = process.env.PI_API_KEY_TESTNET;
-    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    
-    if (!API_KEY || !WALLET_SEED) {
-        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
-    }
-    
-    const BASE_URL = "https://api.minepi.com/v2";
-    
-    // ========== 1. HANDLE EXPIRED/PENDING (CUCI) ==========
-    if (action === 'clean' && paymentId) {
-        try {
-            // Semak status payment dulu
-            const statusRes = await fetch(`${BASE_URL}/payments/${paymentId}`, {
-                headers: { "Authorization": `Key ${API_KEY}` }
-            });
-            const paymentStatus = await statusRes.json();
-            
-            // Jika sudah ada txid, jangan cancel – complete sahaja
-            if (paymentStatus.transaction?.id) {
-                await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
-                    method: "POST",
-                    headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ txid: paymentStatus.transaction.id })
-                });
-                return res.status(200).json({ success: true, message: "Payment completed" });
-            } else {
-                // Cancel payment yang tergendala
-                await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
-                    method: "POST",
-                    headers: { "Authorization": `Key ${API_KEY}` }
-                });
-                return res.status(200).json({ success: true, message: "Payment cleaned" });
-            }
-        } catch (error) {
-            return res.status(500).json({ error: "Gagal bersihkan payment" });
-        }
-    }
-    
-    // ========== 2. HANDLE COMPLETE (U2A compatibility) ==========
-    if (action === 'complete' && paymentId && txid) {
-        try {
-            await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
-                method: "POST",
-                headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ txid })
-            });
-            return res.status(200).json({ success: true, message: "Completed" });
-        } catch (error) {
-            return res.status(500).json({ error: "Gagal complete payment" });
-        }
-    }
-    
-    // ========== 3. A2U: CREATE, SUBMIT, COMPLETE ==========
-    if (!uid || !amount) {
-        return res.status(400).json({ error: "Data tak lengkap. uid dan amount diperlukan." });
-    }
-    
+// ========== 3. A2U: CREATE, SUBMIT, COMPLETE ==========
+if (!uid || !amount) {
+    return res.status(400).json({ error: "Data tak lengkap. uid dan amount diperlukan." });
+}
+
+try {
+    // =====================================================
+    // PRA-CLEANUP: Cari & bersihkan pembayaran A2U lama
+    // untuk uid ini yang mungkin blocking
+    // =====================================================
     try {
-        // STEP 1: CREATE PAYMENT
-        const createRes = await fetch(`${BASE_URL}/payments`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Reward", uid })
-        });
+        console.log(`[A2U Pra-Cleanup] Mencari payment lama untuk uid: ${uid}`);
         
-        const createData = await createRes.json();
-        
-        if (!createRes.ok) {
-            // Jika payment sudah wujud (pending/expired)
-            if (createData.identifier) {
-                // Cuba bersihkan (panggil fungsi clean)
-                await fetch(`${BASE_URL}/payments/${createData.identifier}/cancel`, {
-                    method: "POST",
-                    headers: { "Authorization": `Key ${API_KEY}` }
-                });
+        // Cari SEMUA payment untuk uid ini (tak kira status)
+        const searchRes = await fetch(
+            `${BASE_URL}/payments?uid=${uid}&direction=app_to_user`, {
+                headers: { "Authorization": `Key ${API_KEY}` }
             }
-            return res.status(400).json({ error: createData.error || "Gagal cipta payment" });
+        );
+        
+        if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            const payments = searchData.payments || [];
+            
+            console.log(`[A2U Pra-Cleanup] Jumpa ${payments.length} payment`);
+            
+            for (let p of payments) {
+                // Abaikan yang dah selesai atau dibatalkan
+                if (p.status?.developer_completed || p.status?.cancelled) {
+                    continue;
+                }
+                
+                console.log(`[A2U Pra-Cleanup] Membersihkan: ${p.identifier}`);
+                
+                try {
+                    // Cuba complete dulu jika ada txid
+                    if (p.transaction?.txid) {
+                        await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
+                            method: "POST",
+                            headers: { 
+                                "Authorization": `Key ${API_KEY}`, 
+                                "Content-Type": "application/json" 
+                            },
+                            body: JSON.stringify({ txid: p.transaction.txid })
+                        });
+                        console.log(`[A2U Pra-Cleanup] Completed: ${p.identifier}`);
+                        continue;
+                    }
+                    
+                    // Cuba submit + complete
+                    const subRes = await fetch(`${BASE_URL}/payments/${p.identifier}/submit`, {
+                        method: "POST",
+                        headers: { 
+                            "Authorization": `Key ${API_KEY}`, 
+                            "Content-Type": "application/json" 
+                        },
+                        body: JSON.stringify({ seed: WALLET_SEED })
+                    });
+                    
+                    if (subRes.ok) {
+                        const subData = await subRes.json();
+                        if (subData.txid) {
+                            await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
+                                method: "POST",
+                                headers: { 
+                                    "Authorization": `Key ${API_KEY}`, 
+                                    "Content-Type": "application/json" 
+                                },
+                                body: JSON.stringify({ txid: subData.txid })
+                            });
+                            console.log(`[A2U Pra-Cleanup] Submit+Complete: ${p.identifier}`);
+                            continue;
+                        }
+                    }
+                    
+                    // Kalau semua gagal, cancel
+                    await fetch(`${BASE_URL}/payments/${p.identifier}/cancel`, {
+                        method: "POST",
+                        headers: { "Authorization": `Key ${API_KEY}` }
+                    });
+                    console.log(`[A2U Pra-Cleanup] Cancelled: ${p.identifier}`);
+                    
+                } catch (e) {
+                    console.error(`[A2U Pra-Cleanup] Gagal bersihkan ${p.identifier}:`, e.message);
+                }
+            }
         }
-        
-        const newPaymentId = createData.identifier;
-        
-        // STEP 2: SUBMIT PAYMENT
-        const submitRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/submit`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ seed: WALLET_SEED })
-        });
-        
-        const submitData = await submitRes.json();
-        if (!submitRes.ok) {
-            return res.status(400).json({ error: submitData.error || "Gagal submit payment" });
-        }
-        
-        const newTxid = submitData.txid;
-        
-        // STEP 3: COMPLETE PAYMENT
-        const completeRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/complete`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid: newTxid })
-        });
-        
-        if (!completeRes.ok) {
-            const completeData = await completeRes.json();
-            return res.status(400).json({ error: completeData.error || "Gagal complete payment" });
-        }
-        
-        return res.status(200).json({ success: true, paymentId: newPaymentId, txid: newTxid });
-        
-    } catch (error) {
-        console.error("A2U Error:", error);
-        return res.status(500).json({ error: error.message });
+    } catch (cleanupError) {
+        console.error("[A2U Pra-Cleanup] Ralat:", cleanupError.message);
+        // Jangan stop — teruskan ke create payment baru
     }
+    
+    // =====================================================
+    // STEP 1: CREATE PAYMENT (KOD ASAL)
+    // =====================================================
+    const createRes = await fetch(`${BASE_URL}/payments`, {
+        method: "POST",
+        headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Reward", uid })
+    });
+    
+    const createData = await createRes.json();
+    
+    if (!createRes.ok) {
+        console.error("[A2U Create] Gagal:", createData);
+        return res.status(400).json({ 
+            error: createData.message || createData.error || "Gagal cipta payment" 
+        });
+    }
+    
+    const newPaymentId = createData.identifier;
+    console.log(`[A2U] Payment dicipta: ${newPaymentId}`);
+    
+    // STEP 2: SUBMIT PAYMENT
+    const submitRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/submit`, {
+        method: "POST",
+        headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ seed: WALLET_SEED })
+    });
+    
+    const submitData = await submitRes.json();
+    if (!submitRes.ok) {
+        console.error("[A2U Submit] Gagal:", submitData);
+        return res.status(400).json({ error: submitData.message || submitData.error || "Gagal submit payment" });
+    }
+    
+    const newTxid = submitData.txid;
+    console.log(`[A2U] Payment submitted: ${newTxid}`);
+    
+    // STEP 3: COMPLETE PAYMENT
+    const completeRes = await fetch(`${BASE_URL}/payments/${newPaymentId}/complete`, {
+        method: "POST",
+        headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ txid: newTxid })
+    });
+    
+    if (!completeRes.ok) {
+        const completeData = await completeRes.json();
+        console.error("[A2U Complete] Gagal:", completeData);
+        return res.status(400).json({ error: completeData.message || completeData.error || "Gagal complete payment" });
+    }
+    
+    console.log(`[A2U] Berjaya! Payment: ${newPaymentId}, Txid: ${newTxid}`);
+    return res.status(200).json({ success: true, paymentId: newPaymentId, txid: newTxid });
+    
+} catch (error) {
+    console.error("A2U Error:", error);
+    return res.status(500).json({ error: error.message });
 }

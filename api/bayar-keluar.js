@@ -1,119 +1,41 @@
-// Memory storage untuk track payment (ganti dengan database untuk production)
-const paymentStore = new Map();
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
     
-    const { uid, amount, memo, paymentId, action, txid } = req.body;
+    const { uid, amount, memo } = req.body;
     
-    const API_KEY = process.env.PI_API_KEY_TESTNET;
-    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    
-    if (!API_KEY || !WALLET_SEED) {
-        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
-    }
-    
-    const BASE_URL = "https://api.minepi.com/v2";
-    
-    // ========== HANDLE EXPIRED/PENDING ==========
-    if (action === 'clean' && paymentId) {
-        try {
-            await fetch(`${BASE_URL}/payments/${paymentId}/cancel`, {
-                method: "POST",
-                headers: { "Authorization": `Key ${API_KEY}` }
-            });
-            paymentStore.delete(paymentId);
-            return res.status(200).json({ success: true, message: "Payment cleaned" });
-        } catch (error) {
-            return res.status(500).json({ error: "Gagal bersihkan payment" });
-        }
-    }
-    
-    // ========== HANDLE COMPLETE (U2A) ==========
-    if (action === 'complete' && paymentId && txid) {
-        try {
-            await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
-                method: "POST",
-                headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ txid })
-            });
-            paymentStore.delete(paymentId);
-            return res.status(200).json({ success: true, message: "Completed" });
-        } catch (error) {
-            return res.status(500).json({ error: "Gagal complete payment" });
-        }
-    }
-    
-    // ========== A2U: CREATE → SUBMIT → COMPLETE ==========
     if (!uid || !amount) {
         return res.status(400).json({ error: "Data tak lengkap" });
     }
     
-    // CEK: Elak double payment untuk user yang sama
-    if (paymentStore.has(`pending_${uid}`)) {
-        return res.status(400).json({ error: "Tunggu transaksi sebelum ini selesai." });
+    const API_KEY = process.env.PI_API_KEY_TESTNET;
+    
+    if (!API_KEY) {
+        return res.status(500).json({ error: "API Key missing" });
     }
     
+    const BASE_URL = "https://api.minepi.com/v2";
+    
     try {
-        // CREATE
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Reward", uid })
+            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U Debug", uid })
         });
         
         const createData = await createRes.json();
-        if (!createRes.ok) {
-            return res.status(400).json({ error: createData.error || "Gagal cipta payment" });
-        }
         
-        const paymentId = createData.identifier;
-        
-        // ✅ SIMPAN paymentId (seperti saranan PinoyQ8)
-        paymentStore.set(paymentId, { uid, amount, status: 'created' });
-        paymentStore.set(`pending_${uid}`, Date.now());
-        
-        // SUBMIT
-        const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ seed: WALLET_SEED })
+        return res.status(createRes.ok ? 200 : 400).json({
+            ok: createRes.ok,
+            status: createRes.status,
+            error: createData.error,
+            message: createData.message,
+            fullResponse: createData,
+            uid_sent: uid
         });
-        
-        const submitData = await submitRes.json();
-        if (!submitRes.ok) {
-            paymentStore.delete(paymentId);
-            paymentStore.delete(`pending_${uid}`);
-            return res.status(400).json({ error: submitData.error || "Gagal submit payment" });
-        }
-        
-        const txid = submitData.txid;
-        paymentStore.set(paymentId, { uid, amount, status: 'submitted', txid });
-        
-        // COMPLETE
-        const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid })
-        });
-        
-        if (!completeRes.ok) {
-            const completeData = await completeRes.json();
-            paymentStore.delete(paymentId);
-            paymentStore.delete(`pending_${uid}`);
-            return res.status(400).json({ error: completeData.error || "Gagal complete payment" });
-        }
-        
-        // ✅ Bersihkan storage selepas selesai
-        paymentStore.delete(paymentId);
-        paymentStore.delete(`pending_${uid}`);
-        
-        return res.status(200).json({ success: true, paymentId, txid });
         
     } catch (error) {
-        console.error("A2U Error:", error);
         return res.status(500).json({ error: error.message });
     }
 }

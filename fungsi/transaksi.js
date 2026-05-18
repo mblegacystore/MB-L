@@ -1,31 +1,198 @@
-// ========== UJIAN MINIMAL A2U ==========
+// ========== PEMBERSIHAN AWAL ==========
+async function onIncompletePaymentFound(payment) {
+    updateStatus("Menyelesaikan pembayaran tertunda...");
+    pendingIncompleteCount++;
+    try {
+        let res = await fetch("/api/cuci.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId: payment.identifier })
+        });
+        let data = await res.json();
+        pendingIncompleteCount--;
+        if (data.success) {
+            updateStatus("Selesai");
+            tryEnablePaymentButtons();
+            return { status: "COMPLETED" };
+        }
+        updateStatus("Dibersihkan");
+        tryEnablePaymentButtons();
+        return { status: "CANCELLED" };
+    } catch (e) {
+        pendingIncompleteCount--;
+        updateStatus("Dibersihkan");
+        tryEnablePaymentButtons();
+        return { status: "CANCELLED" };
+    }
+}
+
+async function bersihkanSebelumBayar() {
+    try {
+        const payments = await Pi.getIncompletePayments();
+        if (payments && payments.length > 0) {
+            updateStatus("Membersihkan transaksi terdahulu...");
+            for (let p of payments) {
+                await fetch("/api/cuci.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: p.identifier })
+                });
+            }
+            updateStatus("Sedia untuk pembayaran baru.");
+        }
+    } catch (e) {}
+}
+
+// ========== BELI PRODUK ==========
+async function buyProduct(key, amount) {
+    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    
+    if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
+        showEchelonReport();
+        return;
+    }
+    if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
+        showLockedContent('command');
+        return;
+    }
+    
+    await bersihkanSebelumBayar();
+    let total = parseFloat(amount).toFixed(7);
+    updateStatus("Membayar " + total + " Pi...");
+    Pi.createPayment(
+        { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
+        {
+            onIncompletePaymentFound: onIncompletePaymentFound,
+            onReadyForServerApproval: function(id) {
+                fetch("/api/bayar-sah.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id })
+                });
+            },
+            onReadyForServerCompletion: function(id, txid) {
+                fetch("/api/bayar-selesai.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId: id, txid: txid })
+                }).then(function() {
+                    updateStatus("Berjaya!");
+                    
+                    if (key === "echelon") {
+                        if (!localStorage.getItem('mb-legacy-bought-echelon')) {
+                            if (typeof showSuccessPopup === 'function') {
+                                showSuccessPopup(
+                                    "✅ PURCHASE SUCCESSFUL!",
+                                    "THE ECHELON BRIEFING PACK is now available.\nThank you for your support.",
+                                    "OK"
+                                );
+                            } else {
+                                alert("Purchase successful! Content is now available.");
+                            }
+                        }
+                        localStorage.setItem('mb-legacy-bought-echelon', 'true');
+                        currentUser.boughtEchelon = true;
+                        showEchelonReport();
+                    }
+                    if (key === "command") {
+                        if (!localStorage.getItem('mb-legacy-bought-command')) {
+                            if (typeof showSuccessPopup === 'function') {
+                                showSuccessPopup(
+                                    "✅ PURCHASE SUCCESSFUL!",
+                                    "THE COMMAND CENTER SUITE is now available.\nThank you for your support.",
+                                    "OK"
+                                );
+                            } else {
+                                alert("Purchase successful! Content is now available.");
+                            }
+                        }
+                        localStorage.setItem('mb-legacy-bought-command', 'true');
+                        currentUser.boughtCommand = true;
+                        showLockedContent("command");
+                    }
+                }).catch(async function() {
+                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
+                    updateStatus("Pulih!");
+                });
+            },
+            onCancel: function() { updateStatus("Dibatalkan"); },
+            onError: function(e) { updateStatus("Ralat: " + e.message); }
+        }
+    );
+}
+
+// ========== CLAIM A2U (8 SAAT, TANPA ALERT) ==========
 async function requestPayout() {
-    // Paksa Pi.authenticate() secara langsung
-    updateStatus("Authenticate...");
+    let userData = localStorage.getItem('currentUser');
+    
+    if (!userData) {
+        updateStatus("Log masuk automatik...");
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            setTimeout(() => requestPayout(), 8000);
+        }
+        return;
+    }
+    
+    let user;
+    try {
+        user = JSON.parse(userData);
+    } catch(e) {
+        localStorage.removeItem('currentUser');
+        updateStatus("Data rosak. Login semula...");
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            setTimeout(() => requestPayout(), 8000);
+        }
+        return;
+    }
+    
+    const userId = user.uid;
+    
+    if (!userId) {
+        localStorage.removeItem('currentUser');
+        updateStatus("UID kosong. Login semula...");
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            setTimeout(() => requestPayout(), 8000);
+        }
+        return;
+    }
+    
+    await bersihkanSebelumBayar();
+    updateStatus("Memproses ganjaran...");
     
     try {
-        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
-        
-        const userId = auth.user.uid;
-        updateStatus("UID: " + userId);
-        
-        // Hantar terus ke backend
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 uid: userId, 
                 amount: 0.1,
-                memo: "Test A2U"
+                memo: "A2U Reward - MB Legacy Store"
             })
         });
         
         const result = await response.json();
-        alert("RESPONS: " + JSON.stringify(result));
-        updateStatus(result.success ? "Berjaya!" : "Gagal: " + (result.error || "?"));
         
-    } catch(e) {
-        alert("ERROR: " + e.message);
-        updateStatus("Error: " + e.message);
+        if (result.success) {
+            updateStatus("0.1 Pi dihantar!");
+            if (typeof showSuccessPopup === 'function') {
+                showSuccessPopup(
+                    "✅ REWARD RECEIVED!",
+                    "0.1 Test-Pi has been sent to your wallet.",
+                    "OK"
+                );
+            }
+        } else {
+            localStorage.removeItem('currentUser');
+            updateStatus("UID tidak sah. Login semula...");
+            if (typeof doLogin === 'function') {
+                await doLogin(false);
+                setTimeout(() => requestPayout(), 8000);
+            }
+        }
+    } catch (error) {
+        updateStatus("Rangkaian error: " + error.message);
     }
-}
+                           }

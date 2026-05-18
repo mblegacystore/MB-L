@@ -1,3 +1,5 @@
+import Pi from 'pi-backend';
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -19,88 +21,48 @@ export default async function handler(req, res) {
     if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
     if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
     
-    const BASE_URL = "https://api.minepi.com/v2";
-    
     try {
-        // ========== LANGKAH 1: SAHKAN ACCESS TOKEN ==========
-        const meRes = await fetch(`${BASE_URL}/me`, {
-            headers: { "Authorization": `Bearer ${accessToken}` }
+        // Guna Pi Backend SDK
+        const pi = new Pi({
+            apiKey: API_KEY,
+            walletPrivateSeed: WALLET_SEED,
+            baseURL: "https://api.minepi.com/v2"
         });
         
-        if (!meRes.ok) {
+        // Sahkan access token
+        const me = await pi.getUser(accessToken);
+        
+        if (!me || me.uid !== uid) {
             return res.status(401).json({ 
                 success: false, 
-                error: "Access token tidak sah. Sila login semula." 
+                error: "Access token tidak sah atau UID tidak sepadan" 
             });
         }
         
-        const meData = await meRes.json();
-        
-        // Sahkan UID dalam token sepadan dengan UID yang dihantar
-        if (meData.uid !== uid) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "UID tidak sepadan dengan access token" 
-            });
-        }
-        // ========== TAMAT LANGKAH 1 ==========
-        
-        // ========== LANGKAH 2: CIPTA PEMBAYARAN ==========
-        const createRes = await fetch(`${BASE_URL}/payments`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                amount: parseFloat(amount), 
-                memo: memo || "A2U", 
-                uid: uid,
-                metadata: { source: "claim_reward" }
-            })
+        // Cipta pembayaran A2U
+        const payment = await pi.createPayment({
+            amount: parseFloat(amount),
+            memo: memo || "A2U",
+            uid: uid,
+            metadata: { source: "claim_reward" }
         });
         
-        const createData = await createRes.json();
+        // Submit ke blockchain
+        const txid = await pi.submitPayment(payment.identifier, WALLET_SEED);
         
-        if (!createRes.ok) {
-            return res.status(400).json({ 
-                success: false, 
-                error: createData.message || createData.error || "Create failed" 
-            });
-        }
-        
-        const paymentId = createData.identifier;
-        // ========== TAMAT LANGKAH 2 ==========
-        
-        // ========== LANGKAH 3: SUBMIT ==========
-        const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ seed: WALLET_SEED })
-        });
-        
-        const submitData = await submitRes.json();
-        
-        if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "Submit failed" 
-            });
-        }
-        // ========== TAMAT LANGKAH 3 ==========
-        
-        // ========== LANGKAH 4: COMPLETE ==========
-        await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid: submitData.txid })
-        });
-        // ========== TAMAT LANGKAH 4 ==========
+        // Complete
+        await pi.completePayment(payment.identifier, txid);
         
         return res.status(200).json({ 
             success: true, 
             message: "0.1 Pi berjaya dihantar!",
-            txid: submitData.txid
+            txid: txid
         });
         
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message });
+        return res.status(400).json({ 
+            success: false, 
+            error: error.message || "Gagal" 
+        });
     }
 }

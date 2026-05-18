@@ -51,7 +51,7 @@ async function bersihkanSebelumBayar() {
     }
 }
 
-// ========== U2A: BELI PRODUK (STABIL) ==========
+// ========== U2A: BELI PRODUK ==========
 async function buyProduct(key, amount) {
     console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
     if (!currentUser) { 
@@ -71,7 +71,8 @@ async function buyProduct(key, amount) {
         return;
     }
     
-    await bersihkanSebelumBayar();
+    // ❌ await bersihkanSebelumBayar(); ← TELAH DIBUANG
+    
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
     console.log("DEBUG [buyProduct] Creating payment for", total, "Pi");
@@ -126,7 +127,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (PIAWAIAN) ==========
+// ========== A2U: CLAIM REWARD ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
@@ -181,4 +182,4 @@ async function requestPayout() {
             }
         }
     );
-                            }
+                                                                                                                                        }

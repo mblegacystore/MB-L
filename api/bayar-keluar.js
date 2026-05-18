@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         
         const BASE_URL = "https://api.minepi.com/v2";
         
-        // Sahkan access token
+        // Sahkan access token (Bearer)
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
@@ -33,8 +33,12 @@ export default async function handler(req, res) {
         
         const meData = await meRes.json();
         
-        // Cipta pembayaran - guna /payments (BETUL)
-        const createRes = await fetch(`${BASE_URL}/payments`, {
+        if (meData.uid !== uid) {
+            return res.status(400).json({ success: false, error: "UID tidak sepadan" });
+        }
+        
+        // Cipta pembayaran A2U (URL diperbetulkan)
+        const createRes = await fetch(`${BASE_URL}/payments/a2u`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -48,11 +52,7 @@ export default async function handler(req, res) {
         const createData = await createRes.json();
         
         if (!createRes.ok) {
-            return res.status(400).json({ 
-                success: false, 
-                error: createData.message || createData.error || "Create failed",
-                pi_error: createData
-            });
+            return res.status(400).json({ success: false, error: createData.message || "Create failed" });
         }
         
         // Submit
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ success: false, error: "Submit failed", pi_error: submitData });
+            return res.status(400).json({ success: false, error: "Submit failed" });
         }
         
         // Complete

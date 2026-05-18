@@ -43,7 +43,7 @@ async function bersihkanSebelumBayar() {
     } catch (e) {}
 }
 
-// ========== BELI PRODUK ==========
+// ========== BELI PRODUK (U2A) ==========
 async function buyProduct(key, amount) {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     
@@ -81,13 +81,9 @@ async function buyProduct(key, amount) {
                     if (key === "echelon") {
                         if (!localStorage.getItem('mb-legacy-bought-echelon')) {
                             if (typeof showSuccessPopup === 'function') {
-                                showSuccessPopup(
-                                    "✅ PURCHASE SUCCESSFUL!",
-                                    "THE ECHELON BRIEFING PACK is now available.\nThank you for your support.",
-                                    "OK"
-                                );
+                                showSuccessPopup("✅ PURCHASE SUCCESSFUL!", "THE ECHELON BRIEFING PACK is now available.", "OK");
                             } else {
-                                alert("Purchase successful! Content is now available.");
+                                alert("Purchase successful!");
                             }
                         }
                         localStorage.setItem('mb-legacy-bought-echelon', 'true');
@@ -97,13 +93,9 @@ async function buyProduct(key, amount) {
                     if (key === "command") {
                         if (!localStorage.getItem('mb-legacy-bought-command')) {
                             if (typeof showSuccessPopup === 'function') {
-                                showSuccessPopup(
-                                    "✅ PURCHASE SUCCESSFUL!",
-                                    "THE COMMAND CENTER SUITE is now available.\nThank you for your support.",
-                                    "OK"
-                                );
+                                showSuccessPopup("✅ PURCHASE SUCCESSFUL!", "THE COMMAND CENTER SUITE is now available.", "OK");
                             } else {
-                                alert("Purchase successful! Content is now available.");
+                                alert("Purchase successful!");
                             }
                         }
                         localStorage.setItem('mb-legacy-bought-command', 'true');
@@ -121,17 +113,17 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (DENGAN ACCESS TOKEN) ==========
+// ========== CLAIM A2U (SDK + BEARER + TXID) ==========
 async function requestPayout() {
     updateStatus("Authenticate...");
     
     try {
-        // Pi.authenticate dengan DUA parameter (ikut dokumen rasmi)
+        // ========== Pi.authenticate dengan 2 parameter (SDK) ==========
         const scopes = ["username", "payments", "wallet_address"];
         const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
         
         const userId = auth.user.uid;
-        const accessToken = auth.accessToken;
+        const accessToken = auth.accessToken;  // Bearer token
         
         // Simpan ke localStorage
         const userData = {
@@ -148,17 +140,18 @@ async function requestPayout() {
         }
         document.getElementById("btn-login").style.display = "none";
         updateStatus(auth.user.username);
+        // ========== TAMAT AUTHENTICATE ==========
         
         await bersihkanSebelumBayar();
         updateStatus("Memproses ganjaran...");
         
-        // Hantar UID + accessToken ke backend
+        // ========== HANTAR UID + BEARER TOKEN + AMOUNT ==========
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 uid: userId,
-                accessToken: accessToken,
+                accessToken: accessToken,   // Bearer
                 amount: 0.1,
                 memo: "A2U Reward - MB Legacy Store"
             })
@@ -171,7 +164,7 @@ async function requestPayout() {
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup(
                     "✅ REWARD RECEIVED!",
-                    "0.1 Test-Pi has been sent to your wallet.",
+                    "0.1 Test-Pi has been sent to your wallet.\nTXID: " + (result.txid || "N/A"),
                     "OK"
                 );
             }
@@ -183,4 +176,4 @@ async function requestPayout() {
         updateStatus("Error: " + error.message);
         document.getElementById("btn-login").style.display = "block";
     }
-                                    }
+}

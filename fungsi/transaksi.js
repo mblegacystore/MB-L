@@ -119,7 +119,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (SDK + BEARER + TXID) ==========
+// ========== CLAIM A2U ==========
 async function requestPayout() {
     console.log('DEBUG - requestPayout dipanggil');
     updateStatus("Authenticate...");
@@ -147,8 +147,11 @@ async function requestPayout() {
         if (typeof currentUser !== 'undefined') {
             currentUser = userData;
         }
-        document.getElementById("btn-login").style.display = "none";
-        updateStatus(auth.user.username);
+        
+        const loginBtn = document.getElementById("btn-login");
+        if (loginBtn) loginBtn.style.display = "none";
+        
+        updateStatus("Logged in as: " + auth.user.username);
         
         await bersihkanSebelumBayar();
         updateStatus("Memproses ganjaran...");
@@ -185,6 +188,7 @@ async function requestPayout() {
     } catch (error) {
         console.log('DEBUG - error:', error.message);
         updateStatus("Error: " + error.message);
-        document.getElementById("btn-login").style.display = "block";
+        const loginBtn = document.getElementById("btn-login");
+        if (loginBtn) loginBtn.style.display = "block";
     }
-}
+    }

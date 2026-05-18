@@ -1,59 +1,45 @@
 export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+    
+    const { uid, amount, memo, accessToken } = req.body;
+    
+    if (!uid || !amount) {
+        return res.status(400).json({ error: "Data tak lengkap" });
+    }
+    
+    if (!accessToken) {
+        return res.status(400).json({ error: "Access token missing" });
+    }
+    
+    const API_KEY = process.env.PI_API_KEY_TESTNET;
+    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+    
+    if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
+    if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
+    
+    const BASE_URL = "https://api.minepi.com/v2";
+    
     try {
-        if (req.method !== 'POST') {
-            return res.status(405).json({ error: 'Method not allowed' });
-        }
-        
-        const { uid, amount, memo, accessToken } = req.body;
-        
-        if (!uid || !amount) {
-            return res.status(400).json({ success: false, error: "Data tak lengkap" });
-        }
-        
-        if (!accessToken) {
-            return res.status(400).json({ success: false, error: "Access token missing" });
-        }
-        
-        const API_KEY = process.env.PI_API_KEY_TESTNET;
-        const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-        
-        if (!API_KEY) return res.status(500).json({ success: false, error: "API Key missing" });
-        if (!WALLET_SEED) return res.status(500).json({ success: false, error: "Wallet Seed missing" });
-        
-        const BASE_URL = "https://api.minepi.com/v2";
-        
-        // ========== LANGKAH 1: SAHKAN ACCESS TOKEN (Bearer) ==========
+        // Sahkan access token (Bearer)
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
         
         if (!meRes.ok) {
-            return res.status(401).json({ 
-                success: false, 
-                error: "Access token tidak sah. Sila login semula." 
-            });
+            return res.status(401).json({ error: "Access token tidak sah" });
         }
         
         const meData = await meRes.json();
         
-        if (meData.uid !== uid) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "UID tidak sepadan dengan access token" 
-            });
-        }
-        // ========== TAMAT LANGKAH 1 ==========
-        
-        // ========== LANGKAH 2: CIPTA PEMBAYARAN A2U (Key) ==========
+        // Cipta pembayaran (Key)
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
-            headers: { 
-                "Authorization": `Key ${API_KEY}`, 
-                "Content-Type": "application/json" 
-            },
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 amount: parseFloat(amount), 
-                memo: memo || "A2U Reward", 
+                memo: memo || "A2U", 
                 uid: uid,
                 metadata: { source: "claim_reward" }
             })
@@ -64,57 +50,40 @@ export default async function handler(req, res) {
         if (!createRes.ok) {
             return res.status(400).json({ 
                 success: false, 
-                error: createData.message || createData.error || "Create failed"
+                error: createData.message || createData.error || "Create failed",
+                detail: createData
             });
         }
         
         const paymentId = createData.identifier;
-        // ========== TAMAT LANGKAH 2 ==========
         
-        // ========== LANGKAH 3: SUBMIT KE BLOCKCHAIN ==========
+        // Submit
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: "POST",
-            headers: { 
-                "Authorization": `Key ${API_KEY}`, 
-                "Content-Type": "application/json" 
-            },
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ seed: WALLET_SEED })
         });
         
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ 
-                success: false, 
-                error: submitData.message || "Submit failed" 
-            });
+            return res.status(400).json({ success: false, error: "Submit failed" });
         }
         
-        const txid = submitData.txid;
-        // ========== TAMAT LANGKAH 3 ==========
-        
-        // ========== LANGKAH 4: COMPLETE ==========
+        // Complete
         await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: "POST",
-            headers: { 
-                "Authorization": `Key ${API_KEY}`, 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify({ txid: txid })
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ txid: submitData.txid })
         });
-        // ========== TAMAT LANGKAH 4 ==========
         
         return res.status(200).json({ 
             success: true, 
             message: "0.1 Pi berjaya dihantar!",
-            paymentId: paymentId,
-            txid: txid
+            txid: submitData.txid
         });
         
     } catch (error) {
-        return res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
+        return res.status(500).json({ error: error.message });
     }
 }

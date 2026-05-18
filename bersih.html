@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembersihan Storage MB Legacy Store</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        button { padding: 15px 30px; margin: 10px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
+        .red { background: #c0392b; color: #fff; }
+        .gold { background: #FFD700; color: #000; }
+        .info { background: #1a1a1a; padding: 15px; margin: 15px 0; border-radius: 5px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>🧹 Pembersihan Storage</h1>
+    <p>Gunakan halaman ini untuk membersihkan SEMUA data lama aplikasi anda.</p>
+    
+    <div class="info" id="status">
+        <strong>Status:</strong> Sedia untuk pembersihan.
+    </div>
+
+    <button class="red" onclick="bersihkanStorage()">🗑️ PADAM SEMUA STORAGE</button>
+    <br>
+    <button class="gold" onclick="lihatStorage()">📋 Lihat Storage Semasa</button>
+    <br>
+    <button class="gold" onclick="logMasukSemula()">🔑 LOG MASUK SEMULA</button>
+
+    <script>
+        Pi.init({ version: "2.0", sandbox: true });
+
+        function bersihkanStorage() {
+            // Padam SEMUA localStorage
+            localStorage.clear();
+            
+            // Padam sessionStorage jika ada
+            sessionStorage.clear();
+            
+            // Paparkan status
+            document.getElementById("status").innerHTML = `
+                <strong>Status:</strong> ✅ SEMUA STORAGE TELAH DIPADAM!<br>
+                <small>localStorage: ${localStorage.length} item</small><br>
+                <small>sessionStorage: ${sessionStorage.length} item</small><br>
+                <small>currentUser: ${localStorage.getItem('currentUser') || 'TIADA'}</small>
+            `;
+            
+            alert("✅ SEMUA storage telah dipadam! Sila log masuk semula.");
+        }
+
+        function lihatStorage() {
+            const currentUser = localStorage.getItem('currentUser');
+            const allKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                allKeys.push(localStorage.key(i) + ": " + localStorage.getItem(localStorage.key(i)).substring(0, 50) + "...");
+            }
+            
+            document.getElementById("status").innerHTML = `
+                <strong>Storage Semasa:</strong><br>
+                <small>Jumlah item: ${localStorage.length}</small><br>
+                <small>currentUser: ${currentUser ? currentUser.substring(0, 100) + "..." : "TIADA"}</small><br>
+                <small>Keys: ${allKeys.join('<br>')}</small>
+            `;
+        }
+
+        async function logMasukSemula() {
+            try {
+                const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+                
+                const userData = {
+                    uid: auth.user.uid,
+                    username: auth.user.username,
+                    wallet_address: auth.user.wallet_address || "",
+                    timestamp: Date.now()
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                
+                document.getElementById("status").innerHTML = `
+                    <strong>Status:</strong> ✅ LOG MASUK BERJAYA!<br>
+                    <small>UID Baru: ${auth.user.uid}</small><br>
+                    <small>Username: ${auth.user.username}</small><br>
+                    <small>Wallet: ${auth.user.wallet_address}</small>
+                `;
+                
+                alert("✅ Log masuk berjaya! UID baru: " + auth.user.uid);
+            } catch (e) {
+                document.getElementById("status").innerHTML = `
+                    <strong>Status:</strong> ❌ GAGAL LOG MASUK<br>
+                    <small>Error: ${e.message}</small>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

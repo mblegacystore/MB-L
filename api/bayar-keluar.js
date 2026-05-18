@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     // ========== TAMAT PRA-PEMBERSIHAN ==========
     
     try {
-        // Langkah 1: Cipta
+        // ========== CIPTA PEMBAYARAN ==========
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -68,13 +68,18 @@ export default async function handler(req, res) {
         const createData = await createRes.json();
         
         if (!createRes.ok) {
+            // 🔥 KEMBALIKAN SEMUA MAKLUMAT RALAT UNTUK DIAGNOSIS
             return res.status(400).json({
                 success: false,
-                error: createData.message || "Gagal cipta pembayaran"
+                error: createData.message || createData.error || "Gagal cipta pembayaran",
+                fullError: createData,  // objek penuh ralat dari Pi
+                statusCode: createRes.status,
+                uid_sent: uid
             });
         }
         
         const paymentId = createData.identifier;
+        // ========== TAMAT CIPTA ==========
         
         // Langkah 2: Submit
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {

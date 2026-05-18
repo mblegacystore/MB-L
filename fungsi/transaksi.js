@@ -124,7 +124,6 @@ async function buyProduct(key, amount) {
 
 // ========== CLAIM A2U (BACA DARI LOCALSTORAGE - SELAMAT) ==========
 async function requestPayout() {
-    // ✅ AMBIL UID TERUS DARI localStorage (tak bergantung pada currentUser global)
     let userData = localStorage.getItem('currentUser');
     
     if (!userData) {
@@ -140,16 +139,15 @@ async function requestPayout() {
         return;
     }
     
-    // ========== TAMBAHAN BARU 1: SEMAK KESEGARAN SESI ==========
+    // ✅ SEMAK KESEGARAN SESI (TAMBAHAN BARU)
     const now = Date.now();
-    const oneHour = 60 * 60 * 1000; // 1 jam dalam milisaat
+    const oneHour = 60 * 60 * 1000;
     if (!user.timestamp || (now - user.timestamp) > oneHour) {
         updateStatus("Sesi tamat. Sila login semula.");
         document.getElementById("btn-login").style.display = "block";
         localStorage.removeItem('currentUser');
         return;
     }
-    // ========== TAMAT TAMBAHAN 1 ==========
     
     const userId = user.uid;
     
@@ -186,11 +184,10 @@ async function requestPayout() {
                 );
             }
         } else {
-            // ========== TAMBAHAN BARU 2: KESAN "USER NOT FOUND" ==========
+            // ✅ KESAN "USER NOT FOUND" & PAKSA LOGIN SEMULA (TAMBAHAN BARU)
             if (result.error && (
-                result.error.includes("not found") || 
-                result.error.includes("User not found") ||
-                result.error.includes("recipient")
+                result.error.toLowerCase().includes("not found") ||
+                result.error.toLowerCase().includes("user")
             )) {
                 updateStatus("Sesi tamat. Sila login semula.");
                 document.getElementById("btn-login").style.display = "block";
@@ -198,7 +195,6 @@ async function requestPayout() {
             } else {
                 updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
             }
-            // ========== TAMAT TAMBAHAN 2 ==========
         }
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);

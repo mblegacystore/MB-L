@@ -1,11 +1,3 @@
-import Pi from 'pi-backend';
-
-const pi = new Pi({
-    apiKey: process.env.PI_API_KEY_TESTNET,
-    walletPrivateSeed: process.env.WALLET_PRIVATE_SEED,
-    baseURL: "https://api.minepi.com/v2"
-});
-
 export default async function handler(req, res) {
     try {
         if (req.method !== 'POST') {
@@ -22,40 +14,74 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: "Access token missing" });
         }
         
-        // Sahkan access token
-        const me = await pi.getUser(accessToken);
+        const API_KEY = process.env.PI_API_KEY_TESTNET;
+        const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
         
-        if (!me || me.uid !== uid) {
+        if (!API_KEY) return res.status(500).json({ success: false, error: "API Key missing" });
+        if (!WALLET_SEED) return res.status(500).json({ success: false, error: "Wallet Seed missing" });
+        
+        const BASE_URL = "https://api.minepi.com/v2";
+        
+        // Sahkan access token (Bearer)
+        const meRes = await fetch(`${BASE_URL}/me`, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        
+        if (!meRes.ok) {
             return res.status(401).json({ success: false, error: "Access token tidak sah" });
         }
         
-        // Cipta pembayaran A2U
-        const paymentData = {
-            amount: parseFloat(amount),
-            memo: memo || "A2U Reward",
-            uid: uid,
-            metadata: { source: "claim_reward" }
-        };
+        const meData = await meRes.json();
         
-        const paymentId = await pi.createPayment(paymentData);
+        if (meData.uid !== uid) {
+            return res.status(400).json({ success: false, error: "UID tidak sepadan" });
+        }
         
-        // Submit
-        const txid = await pi.submitPayment(paymentId);
-        
-        // Complete
-        const payment = await pi.completePayment(paymentId, txid);
-        
-        return res.status(200).json({ 
-            success: true, 
-            message: "0.1 Pi berjaya dihantar!",
-            paymentId: paymentId,
-            txid: txid
+        // Cipta pembayaran A2U (URL diperbetulkan)
+        const createRes = await fetch(`${BASE_URL}/payments/a2u`, {
+            method: "POST",
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                amount: parseFloat(amount), 
+                memo: memo || "A2U", 
+                uid: uid,
+                metadata: { source: "claim_reward" }
+            })
         });
         
+        const createData = await createRes.json();
+        
+        if (!createRes.ok) {
+            return res.status(400).json({ success: false, error: createData.message || "Create failed" });
+        }
+        
+        // Submit
+        const submitRes = await fetch(`${BASE_URL}/payments/${createData.identifier}/submit`, {
+            method: "POST",
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ seed: WALLET_SEED })
+        });
+        
+        const submitData = await submitRes.json();
+        
+        if (!submitRes.ok || !submitData.txid) {
+            return res.status(400).json({ success: false, error: "Submit failed" });
+        }
+        
+        // Complete
+        await fetch(`${BASE_URL}/payments/${createData.identifier}/complete`, {
+            method: "POST",
+            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ txid: submitData.txid })
+        });
+        
+        return res.status(200).json({ success: true, message: "Berjaya!" });
+        
     } catch (error) {
-        return res.status(400).json({ 
+        return res.status(500).json({ 
             success: false, 
-            error: error.message || "Gagal" 
+            error: error.message,
+            stack: error.stack 
         });
     }
 }

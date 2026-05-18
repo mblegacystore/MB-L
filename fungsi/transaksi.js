@@ -122,12 +122,14 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (BACA DARI LOCALSTORAGE - SELAMAT) ==========
+// ========== CLAIM A2U (STORAGE LAMA AKAN DIBUANG AUTOMATIK) ==========
 async function requestPayout() {
     let userData = localStorage.getItem('currentUser');
     
+    // ===== JIKA TIADA DATA, SURUH LOGIN =====
     if (!userData) {
         updateStatus("Sila login dahulu.");
+        document.getElementById("btn-login").style.display = "block";
         return;
     }
     
@@ -135,14 +137,20 @@ async function requestPayout() {
     try {
         user = JSON.parse(userData);
     } catch(e) {
-        updateStatus("Data user rosak. Sila login semula.");
+        // Data rosak, buang terus
+        localStorage.removeItem('currentUser');
+        updateStatus("Data rosak. Sila login semula.");
+        document.getElementById("btn-login").style.display = "block";
         return;
     }
     
     const userId = user.uid;
     
-    if (!userId) {
-        updateStatus("ERROR: No user ID found! Please re-login.");
+    // ===== JIKA UID KOSONG ATAU TIDAK SAH, BUANG TERUS =====
+    if (!userId || userId === "undefined" || userId === "null") {
+        localStorage.removeItem('currentUser');
+        updateStatus("UID tidak sah. Sila login semula.");
+        document.getElementById("btn-login").style.display = "block";
         return;
     }
     
@@ -174,28 +182,15 @@ async function requestPayout() {
                 );
             }
         } else {
-            // 🔥 JIKA UID TIDAK DIKENALI, BUANG TERUS DATA LAMA & PAKSA LOGIN BARU
-            if (result.error && (
-                result.error.includes("tidak ditemui") ||
-                result.error.includes("not found") ||
-                result.error.includes("User") ||
-                result.error.includes("user") ||
-                result.error.includes("uid")
-            )) {
-                // Padam semua data sesi lama
-                localStorage.removeItem('currentUser');
-                // Tunjuk butang login semula
-                document.getElementById("btn-login").style.display = "block";
-                // Kosongkan currentUser global
-                if (typeof currentUser !== 'undefined') {
-                    currentUser = null;
-                }
-                updateStatus("UID tidak sah. Sila login semula.");
-            } else {
-                updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
+            // ===== GAGAL: BUANG TERUS STORAGE LAMA, PAKSA LOGIN BARU =====
+            localStorage.removeItem('currentUser');
+            document.getElementById("btn-login").style.display = "block";
+            if (typeof currentUser !== 'undefined') {
+                currentUser = null;
             }
+            updateStatus("UID tidak sah. Sila login semula.");
         }
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-                                                 }
+                        }

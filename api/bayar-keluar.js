@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export default async function handler(req, res) {
     try {
         if (req.method !== 'POST') {
@@ -17,71 +19,45 @@ export default async function handler(req, res) {
         const API_KEY = process.env.PI_API_KEY_TESTNET;
         const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
         
-        if (!API_KEY) return res.status(500).json({ success: false, error: "API Key missing" });
-        if (!WALLET_SEED) return res.status(500).json({ success: false, error: "Wallet Seed missing" });
+        const BASE_URL = "https://api.minepi.com/v2";
         
-        const BASE_URL = "https://api.minepi.com/v1";
-        
-        // Sahkan access token
-        const meRes = await fetch(`${BASE_URL}/me`, {
+        // Sahkan token (Bearer)
+        const meRes = await axios.get(`${BASE_URL}/me`, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
         
-        if (!meRes.ok) {
-            return res.status(401).json({ success: false, error: "Access token tidak sah" });
-        }
-        
-        const meData = await meRes.json();
-        
-        // Cipta pembayaran - guna /payments (BETUL)
-        const createRes = await fetch(`${BASE_URL}/payments`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                amount: parseFloat(amount), 
-                memo: memo || "A2U", 
-                uid: uid,
-                metadata: { source: "claim_reward" }
-            })
+        // Cipta pembayaran (Key)
+        const createRes = await axios.post(`${BASE_URL}/payments`, {
+            amount: parseFloat(amount),
+            memo: memo || "A2U",
+            uid: uid,
+            metadata: { source: "claim_reward" }
+        }, {
+            headers: { "Authorization": `Key ${API_KEY}` }
         });
         
-        const createData = await createRes.json();
-        
-        if (!createRes.ok) {
-            return res.status(400).json({ 
-                success: false, 
-                error: createData.message || createData.error || "Create failed",
-                pi_error: createData
-            });
-        }
+        const paymentId = createRes.data.identifier;
         
         // Submit
-        const submitRes = await fetch(`${BASE_URL}/payments/${createData.identifier}/submit`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ seed: WALLET_SEED })
+        const submitRes = await axios.post(`${BASE_URL}/payments/${paymentId}/submit`, {
+            seed: WALLET_SEED
+        }, {
+            headers: { "Authorization": `Key ${API_KEY}` }
         });
         
-        const submitData = await submitRes.json();
-        
-        if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ success: false, error: "Submit failed", pi_error: submitData });
-        }
-        
         // Complete
-        await fetch(`${BASE_URL}/payments/${createData.identifier}/complete`, {
-            method: "POST",
-            headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ txid: submitData.txid })
+        await axios.post(`${BASE_URL}/payments/${paymentId}/complete`, {
+            txid: submitRes.data.txid
+        }, {
+            headers: { "Authorization": `Key ${API_KEY}` }
         });
         
         return res.status(200).json({ success: true, message: "Berjaya!" });
         
     } catch (error) {
-        return res.status(500).json({ 
+        return res.status(error.response?.status || 500).json({ 
             success: false, 
-            error: error.message,
-            stack: error.stack 
+            error: error.response?.data?.message || error.message 
         });
     }
 }

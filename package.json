@@ -2,14 +2,18 @@
   "name": "mb-legacy-store",
   "version": "2.0.0",
   "description": "Platform Pi Commerce Malaysia – Selamat, Stabil, Dipercayai",
-  "main": "index.html",
   "type": "module",
   "scripts": {
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "build": "echo 'No build step'",
+    "vercel-build": "echo 'Build complete'"
   },
   "keywords": ["pi-network", "commerce", "malaysia"],
   "author": "MB Legacy Store",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.x"
+  },
   "dependencies": {
     "pi-backend": "^0.1.3"
   }

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const BASE_URL = "https://api.minepi.com/v2";
 
     try {
-        // ========== PIAWAIAN #3: SEMAK INCOMPLETE PAYMENTS ==========
+        // ========== PIAWAIAN: SEMAK INCOMPLETE PAYMENTS ==========
         const searchRes = await fetch(`${BASE_URL}/payments?uid=${uid}&direction=app_to_user`, {
             headers: { "Authorization": `Key ${API_KEY}` }
         });
@@ -32,7 +32,6 @@ export default async function handler(req, res) {
         for (const p of incompletePayments) {
             if (p.status?.developer_completed || p.status?.cancelled) continue;
             
-            // Jika ada transaction, complete kan
             if (p.transaction?.txid) {
                 await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
                     method: "POST",
@@ -40,7 +39,6 @@ export default async function handler(req, res) {
                     body: JSON.stringify({ txid: p.transaction.txid })
                 });
             } else {
-                // Jika tidak, cancel
                 await fetch(`${BASE_URL}/payments/${p.identifier}/cancel`, {
                     method: "POST",
                     headers: { "Authorization": `Key ${API_KEY}` }
@@ -62,7 +60,7 @@ export default async function handler(req, res) {
 
         const paymentId = createData.identifier;
 
-        // ========== PIAWAIAN #2: SIMPAN paymentId ==========
+        // ========== PIAWAIAN: SIMPAN paymentId ==========
         paymentStore[paymentId] = {
             uid: uid,
             amount: amount,
@@ -101,9 +99,6 @@ export default async function handler(req, res) {
         }
 
         paymentStore[paymentId].status = 'completed';
-        
-        // Optional: delete dari storage selepas selesai
-        // delete paymentStore[paymentId];
 
         return res.status(200).json({ success: true, paymentId, txid });
 

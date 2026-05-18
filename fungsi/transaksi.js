@@ -170,6 +170,7 @@ async function requestPayout() {
         });
         
         const result = await response.json();
+        alert("RALAT PI: " + JSON.stringify(result));
         
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");

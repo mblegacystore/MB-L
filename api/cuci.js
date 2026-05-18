@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     if (!paymentId) return res.status(200).json({ success: true, message: "Tiada paymentId" });
 
     const API_KEY = process.env.PI_API_KEY_TESTNET;
-    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;   // ✅ tanpa PI_
     const BASE = "https://api.minepi.com/v2";
 
     try {

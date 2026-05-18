@@ -20,7 +20,7 @@ export default async function handler(req, res) {
         if (!API_KEY) return res.status(500).json({ success: false, error: "API Key missing" });
         if (!WALLET_SEED) return res.status(500).json({ success: false, error: "Wallet Seed missing" });
         
-        const BASE_URL = "https://api.minepi.com";
+        const BASE_URL = "https://api.minepi.com/v1";
         
         // Sahkan access token
         const meRes = await fetch(`${BASE_URL}/me`, {

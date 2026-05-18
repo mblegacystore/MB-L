@@ -7,6 +7,8 @@ export default async function handler(req, res) {
     }
 
     const { uid, amount, memo, accessToken } = req.body;
+    
+    console.log('DEBUG - Request body:', { uid, amount, memo, accessToken: accessToken ? 'ADA' : 'TIADA' });
 
     if (!uid || !amount) {
         return res.status(400).json({ success: false, error: 'Data tak lengkap' });
@@ -26,44 +28,64 @@ export default async function handler(req, res) {
 
     try {
         // ========== AUTHENTICATE + BEARER ==========
+        console.log('DEBUG - Calling /me with Bearer token');
+        
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
+
+        console.log('DEBUG - /me response status:', meRes.status);
 
         if (!meRes.ok) {
             return res.status(401).json({ success: false, error: 'Token tidak sah' });
         }
 
         const meData = await meRes.json();
+        console.log('DEBUG - /me response uid:', meData.uid);
 
         if (meData.uid !== uid) {
             return res.status(401).json({ success: false, error: 'UID tidak sepadan' });
         }
 
         // ========== CIPTA PEMBAYARAN ==========
+        const paymentBody = {
+            amount: parseFloat(amount),
+            memo: memo || 'A2U Reward',
+            uid: uid,
+            metadata: JSON.stringify({ source: 'claim_reward' })
+        };
+        
+        console.log('DEBUG - Payment URL:', `${BASE_URL}/payments`);
+        console.log('DEBUG - Payment body:', JSON.stringify(paymentBody));
+        console.log('DEBUG - API Key prefix:', API_KEY.substring(0, 10) + '...');
+
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: 'POST',
             headers: {
                 Authorization: `Key ${API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                amount: parseFloat(amount),
-                memo: memo || 'A2U Reward',
-                uid: uid,
-                metadata: { source: 'claim_reward' }
-            })
+            body: JSON.stringify(paymentBody)
         });
 
+        console.log('DEBUG - Create payment status:', createRes.status);
+        console.log('DEBUG - Create payment headers:', JSON.stringify(Object.fromEntries(createRes.headers)));
+
         const createData = await createRes.json();
+        console.log('DEBUG - Create payment response:', JSON.stringify(createData));
 
         if (!createRes.ok) {
-            return res.status(400).json({ success: false, error: createData.message || 'Create failed' });
+            return res.status(400).json({ 
+                success: false, 
+                error: createData.message || 'Create failed',
+                detail: createData
+            });
         }
 
         const paymentId = createData.identifier;
+        console.log('DEBUG - Payment ID:', paymentId);
 
-        // ========== SIMPAN PAYMENT ID (WAJIB) ==========
+        // ========== SIMPAN PAYMENT ID ==========
         paymentStore[paymentId] = {
             uid: uid,
             amount: amount,
@@ -73,6 +95,8 @@ export default async function handler(req, res) {
         };
 
         // ========== SUBMIT ==========
+        console.log('DEBUG - Submitting payment:', paymentId);
+        
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: 'POST',
             headers: {
@@ -83,9 +107,9 @@ export default async function handler(req, res) {
         });
 
         const submitData = await submitRes.json();
+        console.log('DEBUG - Submit response:', JSON.stringify(submitData));
 
         if (!submitRes.ok || !submitData.txid) {
-            // Gagal submit → kemas kini status
             paymentStore[paymentId].status = 'submit_failed';
             paymentStore[paymentId].error = submitData.message || 'Submit failed';
             
@@ -93,12 +117,14 @@ export default async function handler(req, res) {
         }
 
         const txid = submitData.txid;
+        console.log('DEBUG - TXID:', txid);
 
-        // ========== SIMPAN TXID (WAJIB) ==========
         paymentStore[paymentId].txid = txid;
         paymentStore[paymentId].status = 'submitted';
 
         // ========== COMPLETE ==========
+        console.log('DEBUG - Completing payment:', paymentId, txid);
+        
         const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: 'POST',
             headers: {
@@ -109,8 +135,8 @@ export default async function handler(req, res) {
         });
 
         const completeData = await completeRes.json();
+        console.log('DEBUG - Complete response:', JSON.stringify(completeData));
 
-        // ========== SIMPAN STATUS AKHIR (WAJIB) ==========
         paymentStore[paymentId].status = 'completed';
         paymentStore[paymentId].completedAt = new Date().toISOString();
         paymentStore[paymentId].completeData = completeData;
@@ -125,6 +151,7 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
+        console.log('DEBUG - Error:', error.message);
         return res.status(500).json({ success: false, error: error.message });
     }
-}
+            }

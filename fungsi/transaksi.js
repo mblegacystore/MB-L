@@ -126,13 +126,14 @@ async function requestPayout() {
     updateStatus("Authenticate...");
     
     try {
-        // ========== LANGKAH 1: AUTHENTICATE DIRECT ==========
-        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+        // Pi.authenticate dengan DUA parameter (ikut dokumen rasmi)
+        const scopes = ["username", "payments", "wallet_address"];
+        const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
         
         const userId = auth.user.uid;
         const accessToken = auth.accessToken;
         
-        // Simpan ke localStorage untuk sesi
+        // Simpan ke localStorage
         const userData = {
             uid: userId,
             username: auth.user.username,
@@ -142,18 +143,16 @@ async function requestPayout() {
         };
         localStorage.setItem('currentUser', JSON.stringify(userData));
         
-        // Kemaskini global
         if (typeof currentUser !== 'undefined') {
             currentUser = userData;
         }
         document.getElementById("btn-login").style.display = "none";
-        updateStatus("Welcome: " + auth.user.username);
-        // ========== TAMAT LANGKAH 1 ==========
+        updateStatus(auth.user.username);
         
         await bersihkanSebelumBayar();
         updateStatus("Memproses ganjaran...");
         
-        // ========== LANGKAH 2: HANTAR UID + ACCESS TOKEN ==========
+        // Hantar UID + accessToken ke backend
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -178,11 +177,10 @@ async function requestPayout() {
             }
         } else {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
-            document.getElementById("btn-login").style.display = "block";
         }
         
     } catch (error) {
         updateStatus("Error: " + error.message);
         document.getElementById("btn-login").style.display = "block";
     }
-            }
+                                    }

@@ -121,53 +121,45 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (8 SAAT, TANPA ALERT) ==========
+// ========== CLAIM A2U (DENGAN ACCESS TOKEN) ==========
 async function requestPayout() {
-    let userData = localStorage.getItem('currentUser');
-    
-    if (!userData) {
-        updateStatus("Log masuk automatik...");
-        if (typeof doLogin === 'function') {
-            await doLogin(false);
-            setTimeout(() => requestPayout(), 8000);
-        }
-        return;
-    }
-    
-    let user;
-    try {
-        user = JSON.parse(userData);
-    } catch(e) {
-        localStorage.removeItem('currentUser');
-        updateStatus("Data rosak. Login semula...");
-        if (typeof doLogin === 'function') {
-            await doLogin(false);
-            setTimeout(() => requestPayout(), 8000);
-        }
-        return;
-    }
-    
-    const userId = user.uid;
-    
-    if (!userId) {
-        localStorage.removeItem('currentUser');
-        updateStatus("UID kosong. Login semula...");
-        if (typeof doLogin === 'function') {
-            await doLogin(false);
-            setTimeout(() => requestPayout(), 8000);
-        }
-        return;
-    }
-    
-    await bersihkanSebelumBayar();
-    updateStatus("Memproses ganjaran...");
+    updateStatus("Authenticate...");
     
     try {
+        // ========== LANGKAH 1: AUTHENTICATE DIRECT ==========
+        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+        
+        const userId = auth.user.uid;
+        const accessToken = auth.accessToken;
+        
+        // Simpan ke localStorage untuk sesi
+        const userData = {
+            uid: userId,
+            username: auth.user.username,
+            wallet_address: auth.user.wallet_address || "",
+            accessToken: accessToken,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        // Kemaskini global
+        if (typeof currentUser !== 'undefined') {
+            currentUser = userData;
+        }
+        document.getElementById("btn-login").style.display = "none";
+        updateStatus("Welcome: " + auth.user.username);
+        // ========== TAMAT LANGKAH 1 ==========
+        
+        await bersihkanSebelumBayar();
+        updateStatus("Memproses ganjaran...");
+        
+        // ========== LANGKAH 2: HANTAR UID + ACCESS TOKEN ==========
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                uid: userId, 
+                uid: userId,
+                accessToken: accessToken,
                 amount: 0.1,
                 memo: "A2U Reward - MB Legacy Store"
             })
@@ -185,14 +177,12 @@ async function requestPayout() {
                 );
             }
         } else {
-            localStorage.removeItem('currentUser');
-            updateStatus("UID tidak sah. Login semula...");
-            if (typeof doLogin === 'function') {
-                await doLogin(false);
-                setTimeout(() => requestPayout(), 8000);
-            }
+            updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
+            document.getElementById("btn-login").style.display = "block";
         }
+        
     } catch (error) {
-        updateStatus("Rangkaian error: " + error.message);
+        updateStatus("Error: " + error.message);
+        document.getElementById("btn-login").style.display = "block";
     }
-                           }
+            }

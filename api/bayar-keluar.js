@@ -21,15 +21,14 @@ export default async function handler(req, res) {
     if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
     if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
     
+    const pi = new Pi({
+        apiKey: API_KEY,
+        walletPrivateSeed: WALLET_SEED,
+        baseURL: "https://api.minepi.com/v2"
+    });
+    
     try {
-        // Guna Pi Backend SDK
-        const pi = new Pi({
-            apiKey: API_KEY,
-            walletPrivateSeed: WALLET_SEED,
-            baseURL: "https://api.minepi.com/v2"
-        });
-        
-        // Sahkan access token
+        // Langkah 1: Sahkan access token
         const me = await pi.getUser(accessToken);
         
         if (!me || me.uid !== uid) {
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
             });
         }
         
-        // Cipta pembayaran A2U
+        // Langkah 2: Cipta pembayaran A2U
         const payment = await pi.createPayment({
             amount: parseFloat(amount),
             memo: memo || "A2U",
@@ -47,10 +46,10 @@ export default async function handler(req, res) {
             metadata: { source: "claim_reward" }
         });
         
-        // Submit ke blockchain
-        const txid = await pi.submitPayment(payment.identifier, WALLET_SEED);
+        // Langkah 3: Submit ke blockchain
+        const txid = await pi.submitPayment(payment.identifier);
         
-        // Complete
+        // Langkah 4: Complete
         await pi.completePayment(payment.identifier, txid);
         
         return res.status(200).json({ 

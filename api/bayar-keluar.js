@@ -1,5 +1,12 @@
 import Pi from 'pi-backend';
 
+// ✅ PI SDK CONFIG
+const pi = new Pi({
+    apiKey: process.env.PI_API_KEY_TESTNET,
+    walletPrivateSeed: process.env.WALLET_PRIVATE_SEED,
+    baseURL: "https://api.minepi.com/v2"
+});
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -14,18 +21,6 @@ export default async function handler(req, res) {
     if (!accessToken) {
         return res.status(400).json({ error: "Access token missing" });
     }
-    
-    const API_KEY = process.env.PI_API_KEY_TESTNET;
-    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    
-    if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
-    if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
-    
-    const pi = new Pi({
-        apiKey: API_KEY,
-        walletPrivateSeed: WALLET_SEED,
-        baseURL: "https://api.minepi.com/v2"
-    });
     
     try {
         // Langkah 1: Sahkan access token

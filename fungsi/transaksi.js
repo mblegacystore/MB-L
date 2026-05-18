@@ -139,13 +139,6 @@ async function requestPayout() {
         return;
     }
     
-    // ===== PENGESAHAN SESSION LEMBUT (TIDAK MENGHALANG) =====
-    // Hanya beri amaran jika timestamp tiada, tetapi teruskan pembayaran
-    if (!user.timestamp) {
-        console.warn("Amaran: Tiada timestamp dalam sesi. Pertimbangkan untuk login semula.");
-    }
-    // ===== TAMAT =====
-    
     const userId = user.uid;
     
     if (!userId) {
@@ -170,7 +163,6 @@ async function requestPayout() {
         });
         
         const result = await response.json();
-        alert("RALAT PI: " + JSON.stringify(result));
         
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");
@@ -182,14 +174,23 @@ async function requestPayout() {
                 );
             }
         } else {
-            // ✅ KESAN "USER NOT FOUND" & PAKSA LOGIN SEMULA
+            // 🔥 JIKA UID TIDAK DIKENALI, BUANG TERUS DATA LAMA & PAKSA LOGIN BARU
             if (result.error && (
-                result.error.toLowerCase().includes("not found") ||
-                result.error.toLowerCase().includes("user")
+                result.error.includes("tidak ditemui") ||
+                result.error.includes("not found") ||
+                result.error.includes("User") ||
+                result.error.includes("user") ||
+                result.error.includes("uid")
             )) {
-                updateStatus("Sesi tamat. Sila login semula.");
-                document.getElementById("btn-login").style.display = "block";
+                // Padam semua data sesi lama
                 localStorage.removeItem('currentUser');
+                // Tunjuk butang login semula
+                document.getElementById("btn-login").style.display = "block";
+                // Kosongkan currentUser global
+                if (typeof currentUser !== 'undefined') {
+                    currentUser = null;
+                }
+                updateStatus("UID tidak sah. Sila login semula.");
             } else {
                 updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
             }
@@ -197,4 +198,4 @@ async function requestPayout() {
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-                        }
+                                                 }

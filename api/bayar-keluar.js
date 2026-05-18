@@ -3,10 +3,14 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
     
-    const { uid, amount, memo } = req.body;
+    const { uid, amount, memo, accessToken } = req.body;
     
     if (!uid || !amount) {
         return res.status(400).json({ error: "Data tak lengkap" });
+    }
+    
+    if (!accessToken) {
+        return res.status(400).json({ error: "Access token missing" });
     }
     
     const API_KEY = process.env.PI_API_KEY_TESTNET;
@@ -18,11 +22,39 @@ export default async function handler(req, res) {
     const BASE_URL = "https://api.minepi.com/v2";
     
     try {
-        // CREATE
+        // ========== LANGKAH 1: SAHKAN ACCESS TOKEN ==========
+        const meRes = await fetch(`${BASE_URL}/me`, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        
+        if (!meRes.ok) {
+            return res.status(401).json({ 
+                success: false, 
+                error: "Access token tidak sah. Sila login semula." 
+            });
+        }
+        
+        const meData = await meRes.json();
+        
+        // Sahkan UID dalam token sepadan dengan UID yang dihantar
+        if (meData.uid !== uid) {
+            return res.status(400).json({ 
+                success: false, 
+                error: "UID tidak sepadan dengan access token" 
+            });
+        }
+        // ========== TAMAT LANGKAH 1 ==========
+        
+        // ========== LANGKAH 2: CIPTA PEMBAYARAN ==========
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U", uid: uid })
+            body: JSON.stringify({ 
+                amount: parseFloat(amount), 
+                memo: memo || "A2U", 
+                uid: uid,
+                metadata: { source: "claim_reward" }
+            })
         });
         
         const createData = await createRes.json();
@@ -30,13 +62,14 @@ export default async function handler(req, res) {
         if (!createRes.ok) {
             return res.status(400).json({ 
                 success: false, 
-                error: createData.message || createData.error || "Create failed"
+                error: createData.message || createData.error || "Create failed" 
             });
         }
         
         const paymentId = createData.identifier;
+        // ========== TAMAT LANGKAH 2 ==========
         
-        // SUBMIT
+        // ========== LANGKAH 3: SUBMIT ==========
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -46,19 +79,28 @@ export default async function handler(req, res) {
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ success: false, error: "Submit failed" });
+            return res.status(400).json({ 
+                success: false, 
+                error: "Submit failed" 
+            });
         }
+        // ========== TAMAT LANGKAH 3 ==========
         
-        // COMPLETE
+        // ========== LANGKAH 4: COMPLETE ==========
         await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ txid: submitData.txid })
         });
+        // ========== TAMAT LANGKAH 4 ==========
         
-        return res.status(200).json({ success: true, message: "0.1 Pi berjaya dihantar!" });
+        return res.status(200).json({ 
+            success: true, 
+            message: "0.1 Pi berjaya dihantar!",
+            txid: submitData.txid
+        });
         
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
     }
-}
+        }

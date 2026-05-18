@@ -122,75 +122,26 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== CLAIM A2U (STORAGE LAMA AKAN DIBUANG AUTOMATIK) ==========
+// ========== CLAIM A2U ==========
 async function requestPayout() {
-    let userData = localStorage.getItem('currentUser');
+    // ===== BUANG currentUser LAMA, KEKALKAN DATA U2A =====
+    const savedEchelon = localStorage.getItem('mb-legacy-bought-echelon');
+    const savedCommand = localStorage.getItem('mb-legacy-bought-command');
+    const savedLang = localStorage.getItem('mb-legacy-lang');
     
-    // ===== JIKA TIADA DATA, SURUH LOGIN =====
-    if (!userData) {
-        updateStatus("Sila login dahulu.");
-        document.getElementById("btn-login").style.display = "block";
-        return;
-    }
+    // Buang currentUser
+    localStorage.removeItem('currentUser');
     
-    let user;
-    try {
-        user = JSON.parse(userData);
-    } catch(e) {
-        // Data rosak, buang terus
-        localStorage.removeItem('currentUser');
-        updateStatus("Data rosak. Sila login semula.");
-        document.getElementById("btn-login").style.display = "block";
-        return;
-    }
+    // Pulihkan data U2A
+    if (savedEchelon) localStorage.setItem('mb-legacy-bought-echelon', savedEchelon);
+    if (savedCommand) localStorage.setItem('mb-legacy-bought-command', savedCommand);
+    if (savedLang) localStorage.setItem('mb-legacy-lang', savedLang);
+    // ===== TAMAT =====
     
-    const userId = user.uid;
+    // Paksa login semula
+    updateStatus("Sila login semula untuk dapatkan UID sah.");
+    document.getElementById("btn-login").style.display = "block";
     
-    // ===== JIKA UID KOSONG ATAU TIDAK SAH, BUANG TERUS =====
-    if (!userId || userId === "undefined" || userId === "null") {
-        localStorage.removeItem('currentUser');
-        updateStatus("UID tidak sah. Sila login semula.");
-        document.getElementById("btn-login").style.display = "block";
-        return;
-    }
-    
-    // ✅ Bersihkan payment tergendala dulu
-    await bersihkanSebelumBayar();
-    
-    updateStatus("Memproses ganjaran...");
-    
-    try {
-        const response = await fetch("/api/bayar-keluar.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                uid: userId, 
-                amount: 0.1,
-                memo: "A2U Reward - MB Legacy Store"
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            updateStatus("0.1 Pi dihantar!");
-            if (typeof showSuccessPopup === 'function') {
-                showSuccessPopup(
-                    "✅ REWARD RECEIVED!",
-                    "0.1 Test-Pi has been sent to your wallet.",
-                    "OK"
-                );
-            }
-        } else {
-            // ===== GAGAL: BUANG TERUS STORAGE LAMA, PAKSA LOGIN BARU =====
-            localStorage.removeItem('currentUser');
-            document.getElementById("btn-login").style.display = "block";
-            if (typeof currentUser !== 'undefined') {
-                currentUser = null;
-            }
-            updateStatus("UID tidak sah. Sila login semula.");
-        }
-    } catch (error) {
-        updateStatus("Rangkaian error: " + error.message);
-    }
+    // Jangan teruskan pembayaran
+    return;
                         }

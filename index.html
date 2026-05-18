@@ -37,9 +37,13 @@
 <!-- ===== KOTAK STATUS (DI ATAS) ===== -->
 <div id="stickyStatus"><p id="stSticky">Vault Secured. System Ready.</p></div>
 
+<!-- ===== BUTANG PEMBERSIHAN STORAGE (SEMENTARA) ===== -->
+<button onclick="localStorage.clear(); alert('Storage dipadam!'); location.reload();" style="padding:8px 15px; margin:5px; background:#c0392b; color:#fff; border:none; border-radius:4px; font-size:0.7rem; cursor:pointer;">
+    🗑️ PADAM STORAGE
+
 <!-- ===== BUTANG LOGIN (DI ATAS) ===== -->
 <button id="btn-login" class="golden-btn" onclick="doLogin()">🔑 CONNECT ACCOUNT</button>
-
+button
 <!-- ===== PIONEER REWARD (CLAIM A2U) ===== -->
 <div class="treasury-section" id="payout-content">
     <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">

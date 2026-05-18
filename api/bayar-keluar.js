@@ -20,9 +20,9 @@ export default async function handler(req, res) {
         if (!API_KEY) return res.status(500).json({ success: false, error: "API Key missing" });
         if (!WALLET_SEED) return res.status(500).json({ success: false, error: "Wallet Seed missing" });
         
-        const BASE_URL = "https://api.minepi.com/v2";
+        const BASE_URL = "https://api.minepi.com/v1";
         
-        // Sahkan access token (Bearer)
+        // Sahkan access token
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
@@ -33,12 +33,8 @@ export default async function handler(req, res) {
         
         const meData = await meRes.json();
         
-        if (meData.uid !== uid) {
-            return res.status(400).json({ success: false, error: "UID tidak sepadan" });
-        }
-        
-        // Cipta pembayaran A2U (URL diperbetulkan)
-        const createRes = await fetch(`${BASE_URL}/payments/a2u`, {
+        // Cipta pembayaran - guna /payments (BETUL)
+        const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -52,7 +48,11 @@ export default async function handler(req, res) {
         const createData = await createRes.json();
         
         if (!createRes.ok) {
-            return res.status(400).json({ success: false, error: createData.message || "Create failed" });
+            return res.status(400).json({ 
+                success: false, 
+                error: createData.message || createData.error || "Create failed",
+                pi_error: createData
+            });
         }
         
         // Submit
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ success: false, error: "Submit failed" });
+            return res.status(400).json({ success: false, error: "Submit failed", pi_error: submitData });
         }
         
         // Complete

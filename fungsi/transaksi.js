@@ -139,15 +139,12 @@ async function requestPayout() {
         return;
     }
     
-    // ✅ SEMAK KESEGARAN SESI (TAMBAHAN BARU)
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-    if (!user.timestamp || (now - user.timestamp) > oneHour) {
-        updateStatus("Sesi tamat. Sila login semula.");
-        document.getElementById("btn-login").style.display = "block";
-        localStorage.removeItem('currentUser');
-        return;
+    // ===== PENGESAHAN SESSION LEMBUT (TIDAK MENGHALANG) =====
+    // Hanya beri amaran jika timestamp tiada, tetapi teruskan pembayaran
+    if (!user.timestamp) {
+        console.warn("Amaran: Tiada timestamp dalam sesi. Pertimbangkan untuk login semula.");
     }
+    // ===== TAMAT =====
     
     const userId = user.uid;
     
@@ -184,7 +181,7 @@ async function requestPayout() {
                 );
             }
         } else {
-            // ✅ KESAN "USER NOT FOUND" & PAKSA LOGIN SEMULA (TAMBAHAN BARU)
+            // ✅ KESAN "USER NOT FOUND" & PAKSA LOGIN SEMULA
             if (result.error && (
                 result.error.toLowerCase().includes("not found") ||
                 result.error.toLowerCase().includes("user")
@@ -199,4 +196,4 @@ async function requestPayout() {
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-                            }
+                        }

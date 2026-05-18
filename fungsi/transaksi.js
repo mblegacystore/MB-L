@@ -126,8 +126,13 @@ async function requestPayout() {
     let userData = localStorage.getItem('currentUser');
     
     if (!userData) {
-        updateStatus("Sila login dahulu.");
-        document.getElementById("btn-login").style.display = "block";
+        updateStatus("Log masuk automatik...");
+        // PANGGIL doLogin SECARA AUTOMATIK
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            // Selepas login, cuba lagi claim
+            setTimeout(() => requestPayout(), 2000);
+        }
         return;
     }
     
@@ -136,8 +141,11 @@ async function requestPayout() {
         user = JSON.parse(userData);
     } catch(e) {
         localStorage.removeItem('currentUser');
-        updateStatus("Data rosak. Sila login semula.");
-        document.getElementById("btn-login").style.display = "block";
+        updateStatus("Data rosak. Login semula...");
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            setTimeout(() => requestPayout(), 2000);
+        }
         return;
     }
     
@@ -145,8 +153,11 @@ async function requestPayout() {
     
     if (!userId) {
         localStorage.removeItem('currentUser');
-        updateStatus("UID kosong. Sila login semula.");
-        document.getElementById("btn-login").style.display = "block";
+        updateStatus("UID kosong. Login semula...");
+        if (typeof doLogin === 'function') {
+            await doLogin(false);
+            setTimeout(() => requestPayout(), 2000);
+        }
         return;
     }
     
@@ -176,13 +187,13 @@ async function requestPayout() {
                 );
             }
         } else {
-            // HANYA BUANG UID JIKA GAGAL
+            // GAGAL: Buang UID lama dan cuba login automatik
             localStorage.removeItem('currentUser');
-            document.getElementById("btn-login").style.display = "block";
-            if (typeof currentUser !== 'undefined') {
-                currentUser = null;
+            updateStatus("UID tidak sah. Login semula automatik...");
+            if (typeof doLogin === 'function') {
+                await doLogin(false);
+                setTimeout(() => requestPayout(), 2000);
             }
-            updateStatus("Gagal. Sila login semula dan cuba lagi.");
         }
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);

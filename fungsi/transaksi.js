@@ -47,7 +47,6 @@ async function bersihkanSebelumBayar() {
 async function buyProduct(key, amount) {
     if (!currentUser) { updateStatus("Sila login dahulu."); return; }
     
-    // 🔥 SEMAK: Jika sudah beli, terus papar kandungan
     if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
         showEchelonReport();
         return;
@@ -124,24 +123,68 @@ async function buyProduct(key, amount) {
 
 // ========== CLAIM A2U ==========
 async function requestPayout() {
-    // ===== BUANG currentUser LAMA, KEKALKAN DATA U2A =====
-    const savedEchelon = localStorage.getItem('mb-legacy-bought-echelon');
-    const savedCommand = localStorage.getItem('mb-legacy-bought-command');
-    const savedLang = localStorage.getItem('mb-legacy-lang');
+    let userData = localStorage.getItem('currentUser');
     
-    // Buang currentUser
-    localStorage.removeItem('currentUser');
+    if (!userData) {
+        updateStatus("Sila login dahulu.");
+        document.getElementById("btn-login").style.display = "block";
+        return;
+    }
     
-    // Pulihkan data U2A
-    if (savedEchelon) localStorage.setItem('mb-legacy-bought-echelon', savedEchelon);
-    if (savedCommand) localStorage.setItem('mb-legacy-bought-command', savedCommand);
-    if (savedLang) localStorage.setItem('mb-legacy-lang', savedLang);
-    // ===== TAMAT =====
+    let user;
+    try {
+        user = JSON.parse(userData);
+    } catch(e) {
+        localStorage.removeItem('currentUser');
+        updateStatus("Data rosak. Sila login semula.");
+        document.getElementById("btn-login").style.display = "block";
+        return;
+    }
     
-    // Paksa login semula
-    updateStatus("Sila login semula untuk dapatkan UID sah.");
-    document.getElementById("btn-login").style.display = "block";
+    const userId = user.uid;
     
-    // Jangan teruskan pembayaran
-    return;
-                        }
+    if (!userId) {
+        localStorage.removeItem('currentUser');
+        updateStatus("UID kosong. Sila login semula.");
+        document.getElementById("btn-login").style.display = "block";
+        return;
+    }
+    
+    await bersihkanSebelumBayar();
+    updateStatus("Memproses ganjaran...");
+    
+    try {
+        const response = await fetch("/api/bayar-keluar.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                uid: userId, 
+                amount: 0.1,
+                memo: "A2U Reward - MB Legacy Store"
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            updateStatus("0.1 Pi dihantar!");
+            if (typeof showSuccessPopup === 'function') {
+                showSuccessPopup(
+                    "✅ REWARD RECEIVED!",
+                    "0.1 Test-Pi has been sent to your wallet.",
+                    "OK"
+                );
+            }
+        } else {
+            // HANYA BUANG UID JIKA GAGAL
+            localStorage.removeItem('currentUser');
+            document.getElementById("btn-login").style.display = "block";
+            if (typeof currentUser !== 'undefined') {
+                currentUser = null;
+            }
+            updateStatus("Gagal. Sila login semula dan cuba lagi.");
+        }
+    } catch (error) {
+        updateStatus("Rangkaian error: " + error.message);
+    }
+                            }

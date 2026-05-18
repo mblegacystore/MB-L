@@ -1,6 +1,3 @@
-// Storan sementara (guna pangkalan data sebenar di produksi)
-let paymentStore = {};
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -8,7 +5,7 @@ export default async function handler(req, res) {
 
     const { uid, amount, memo, accessToken } = req.body;
     
-    console.log('DEBUG - Request body:', { uid, amount, memo, accessToken: accessToken ? 'ADA' : 'TIADA' });
+    console.log('DEBUG - Request body:', JSON.stringify({ uid, amount, memo, hasToken: !!accessToken }));
 
     if (!uid || !amount) {
         return res.status(400).json({ success: false, error: 'Data tak lengkap' });
@@ -27,37 +24,28 @@ export default async function handler(req, res) {
     const BASE_URL = 'https://api.minepi.com/v2';
 
     try {
-        // ========== AUTHENTICATE + BEARER ==========
-        console.log('DEBUG - Calling /me with Bearer token');
-        
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
-        console.log('DEBUG - /me response status:', meRes.status);
+        console.log('DEBUG - /me status:', meRes.status);
 
         if (!meRes.ok) {
             return res.status(401).json({ success: false, error: 'Token tidak sah' });
         }
 
         const meData = await meRes.json();
-        console.log('DEBUG - /me response uid:', meData.uid);
+        console.log('DEBUG - /me uid:', meData.uid);
 
-        if (meData.uid !== uid) {
-            return res.status(401).json({ success: false, error: 'UID tidak sepadan' });
-        }
-
-        // ========== CIPTA PEMBAYARAN ==========
-        const paymentBody = {
+        const payload = {
             amount: parseFloat(amount),
             memo: memo || 'A2U Reward',
             uid: uid,
-            metadata: JSON.stringify({ source: 'claim_reward' })
+            metadata: { source: 'claim_reward' }
         };
         
-        console.log('DEBUG - Payment URL:', `${BASE_URL}/payments`);
-        console.log('DEBUG - Payment body:', JSON.stringify(paymentBody));
-        console.log('DEBUG - API Key prefix:', API_KEY.substring(0, 10) + '...');
+        console.log('DEBUG - URL:', `${BASE_URL}/payments`);
+        console.log('DEBUG - Payload:', JSON.stringify(payload));
 
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: 'POST',
@@ -65,19 +53,26 @@ export default async function handler(req, res) {
                 Authorization: `Key ${API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(paymentBody)
+            body: JSON.stringify(payload)
         });
 
-        console.log('DEBUG - Create payment status:', createRes.status);
-        console.log('DEBUG - Create payment headers:', JSON.stringify(Object.fromEntries(createRes.headers)));
+        console.log('DEBUG - Create status:', createRes.status);
 
-        const createData = await createRes.json();
-        console.log('DEBUG - Create payment response:', JSON.stringify(createData));
+        const createText = await createRes.text();
+        console.log('DEBUG - Create raw response:', createText);
+
+        let createData;
+        try {
+            createData = JSON.parse(createText);
+        } catch {
+            console.log('DEBUG - Response bukan JSON');
+            return res.status(400).json({ success: false, error: 'Invalid response' });
+        }
 
         if (!createRes.ok) {
             return res.status(400).json({ 
                 success: false, 
-                error: createData.message || 'Create failed',
+                error: createData.message || createData.error || 'Create failed',
                 detail: createData
             });
         }
@@ -85,18 +80,6 @@ export default async function handler(req, res) {
         const paymentId = createData.identifier;
         console.log('DEBUG - Payment ID:', paymentId);
 
-        // ========== SIMPAN PAYMENT ID ==========
-        paymentStore[paymentId] = {
-            uid: uid,
-            amount: amount,
-            memo: memo,
-            status: 'created',
-            createdAt: new Date().toISOString()
-        };
-
-        // ========== SUBMIT ==========
-        console.log('DEBUG - Submitting payment:', paymentId);
-        
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: 'POST',
             headers: {
@@ -107,51 +90,34 @@ export default async function handler(req, res) {
         });
 
         const submitData = await submitRes.json();
-        console.log('DEBUG - Submit response:', JSON.stringify(submitData));
+        console.log('DEBUG - Submit status:', submitRes.status);
 
         if (!submitRes.ok || !submitData.txid) {
-            paymentStore[paymentId].status = 'submit_failed';
-            paymentStore[paymentId].error = submitData.message || 'Submit failed';
-            
-            return res.status(400).json({ success: false, error: 'Submit failed' });
+            return res.status(400).json({ success: false, error: 'Submit failed', detail: submitData });
         }
 
-        const txid = submitData.txid;
-        console.log('DEBUG - TXID:', txid);
+        console.log('DEBUG - TXID:', submitData.txid);
 
-        paymentStore[paymentId].txid = txid;
-        paymentStore[paymentId].status = 'submitted';
-
-        // ========== COMPLETE ==========
-        console.log('DEBUG - Completing payment:', paymentId, txid);
-        
-        const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
+        await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: 'POST',
             headers: {
                 Authorization: `Key ${API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ txid: txid })
+            body: JSON.stringify({ txid: submitData.txid })
         });
 
-        const completeData = await completeRes.json();
-        console.log('DEBUG - Complete response:', JSON.stringify(completeData));
+        console.log('DEBUG - Complete done');
 
-        paymentStore[paymentId].status = 'completed';
-        paymentStore[paymentId].completedAt = new Date().toISOString();
-        paymentStore[paymentId].completeData = completeData;
-
-        // ========== BERJAYA ==========
         return res.status(200).json({
             success: true,
             message: '0.1 Pi berjaya dihantar!',
             paymentId: paymentId,
-            txid: txid,
-            stored: paymentStore[paymentId]
+            txid: submitData.txid
         });
 
     } catch (error) {
         console.log('DEBUG - Error:', error.message);
         return res.status(500).json({ success: false, error: error.message });
     }
-            }
+}

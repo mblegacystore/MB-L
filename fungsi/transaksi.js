@@ -140,6 +140,17 @@ async function requestPayout() {
         return;
     }
     
+    // ========== TAMBAHAN BARU 1: SEMAK KESEGARAN SESI ==========
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000; // 1 jam dalam milisaat
+    if (!user.timestamp || (now - user.timestamp) > oneHour) {
+        updateStatus("Sesi tamat. Sila login semula.");
+        document.getElementById("btn-login").style.display = "block";
+        localStorage.removeItem('currentUser');
+        return;
+    }
+    // ========== TAMAT TAMBAHAN 1 ==========
+    
     const userId = user.uid;
     
     if (!userId) {
@@ -175,9 +186,21 @@ async function requestPayout() {
                 );
             }
         } else {
-            updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
+            // ========== TAMBAHAN BARU 2: KESAN "USER NOT FOUND" ==========
+            if (result.error && (
+                result.error.includes("not found") || 
+                result.error.includes("User not found") ||
+                result.error.includes("recipient")
+            )) {
+                updateStatus("Sesi tamat. Sila login semula.");
+                document.getElementById("btn-login").style.display = "block";
+                localStorage.removeItem('currentUser');
+            } else {
+                updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
+            }
+            // ========== TAMAT TAMBAHAN 2 ==========
         }
     } catch (error) {
         updateStatus("Rangkaian error: " + error.message);
     }
-}
+                            }

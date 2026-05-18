@@ -1,4 +1,5 @@
-let paymentStore = {}; // Ganti dengan database untuk production
+// TEMPORARY STORAGE (ganti dengan database untuk production)
+const paymentStore = {};
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -21,17 +22,17 @@ export default async function handler(req, res) {
     const BASE_URL = "https://api.minepi.com/v2";
 
     try {
-        // ✅ PIAWAIAN: Semak incomplete payments dulu
-        const incompleteRes = await fetch(`${BASE_URL}/payments?uid=${uid}&direction=app_to_user`, {
+        // ========== PIAWAIAN #3: SEMAK INCOMPLETE PAYMENTS ==========
+        const searchRes = await fetch(`${BASE_URL}/payments?uid=${uid}&direction=app_to_user`, {
             headers: { "Authorization": `Key ${API_KEY}` }
         });
-        const incompleteData = await incompleteRes.json();
-        const incompletePayments = incompleteData.payments || [];
+        const searchData = await searchRes.json();
+        const incompletePayments = searchData.payments || [];
 
         for (const p of incompletePayments) {
             if (p.status?.developer_completed || p.status?.cancelled) continue;
             
-            // Jika ada payment tergendala, cancel atau complete
+            // Jika ada transaction, complete kan
             if (p.transaction?.txid) {
                 await fetch(`${BASE_URL}/payments/${p.identifier}/complete`, {
                     method: "POST",
@@ -39,6 +40,7 @@ export default async function handler(req, res) {
                     body: JSON.stringify({ txid: p.transaction.txid })
                 });
             } else {
+                // Jika tidak, cancel
                 await fetch(`${BASE_URL}/payments/${p.identifier}/cancel`, {
                     method: "POST",
                     headers: { "Authorization": `Key ${API_KEY}` }
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // ✅ CREATE PAYMENT
+        // ========== CREATE PAYMENT ==========
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -60,10 +62,15 @@ export default async function handler(req, res) {
 
         const paymentId = createData.identifier;
 
-        // ✅ PIAWAIAN: WAJIB simpan paymentId
-        paymentStore[paymentId] = { uid, amount, status: 'created', createdAt: Date.now() };
+        // ========== PIAWAIAN #2: SIMPAN paymentId ==========
+        paymentStore[paymentId] = {
+            uid: uid,
+            amount: amount,
+            status: 'created',
+            createdAt: Date.now()
+        };
 
-        // ✅ SUBMIT PAYMENT
+        // ========== SUBMIT PAYMENT ==========
         const submitRes = await fetch(`${BASE_URL}/payments/${paymentId}/submit`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -77,12 +84,10 @@ export default async function handler(req, res) {
         }
 
         const txid = submitData.txid;
-
-        // ✅ PIAWAIAN: WAJIB simpan txid
         paymentStore[paymentId].txid = txid;
         paymentStore[paymentId].status = 'submitted';
 
-        // ✅ COMPLETE PAYMENT
+        // ========== COMPLETE PAYMENT ==========
         const completeRes = await fetch(`${BASE_URL}/payments/${paymentId}/complete`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
@@ -96,7 +101,9 @@ export default async function handler(req, res) {
         }
 
         paymentStore[paymentId].status = 'completed';
-        delete paymentStore[paymentId]; // Optional: bersihkan selepas selesai
+        
+        // Optional: delete dari storage selepas selesai
+        // delete paymentStore[paymentId];
 
         return res.status(200).json({ success: true, paymentId, txid });
 
@@ -104,4 +111,4 @@ export default async function handler(req, res) {
         console.error("A2U Error:", error);
         return res.status(500).json({ error: error.message });
     }
-}
+                }

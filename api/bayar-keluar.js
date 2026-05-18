@@ -5,8 +5,16 @@ export default async function handler(req, res) {
     
     const { uid, amount, memo } = req.body;
     
+    if (!uid || !amount) {
+        return res.status(400).json({ error: "Data tak lengkap" });
+    }
+    
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+    
+    if (!API_KEY) return res.status(500).json({ error: "API Key missing" });
+    if (!WALLET_SEED) return res.status(500).json({ error: "Wallet Seed missing" });
+    
     const BASE_URL = "https://api.minepi.com/v2";
     
     try {
@@ -14,7 +22,7 @@ export default async function handler(req, res) {
         const createRes = await fetch(`${BASE_URL}/payments`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "Test", uid: uid })
+            body: JSON.stringify({ amount: parseFloat(amount), memo: memo || "A2U", uid: uid })
         });
         
         const createData = await createRes.json();
@@ -22,8 +30,7 @@ export default async function handler(req, res) {
         if (!createRes.ok) {
             return res.status(400).json({ 
                 success: false, 
-                error: createData.message || createData.error || "Create failed",
-                pi_response: createData
+                error: createData.message || createData.error || "Create failed"
             });
         }
         
@@ -39,7 +46,7 @@ export default async function handler(req, res) {
         const submitData = await submitRes.json();
         
         if (!submitRes.ok || !submitData.txid) {
-            return res.status(400).json({ success: false, error: "Submit failed", pi_response: submitData });
+            return res.status(400).json({ success: false, error: "Submit failed" });
         }
         
         // COMPLETE
@@ -49,9 +56,9 @@ export default async function handler(req, res) {
             body: JSON.stringify({ txid: submitData.txid })
         });
         
-        return res.status(200).json({ success: true, message: "OK", txid: submitData.txid });
+        return res.status(200).json({ success: true, message: "0.1 Pi berjaya dihantar!" });
         
-    } catch(e) {
-        return res.status(500).json({ success: false, error: e.message });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
     }
 }

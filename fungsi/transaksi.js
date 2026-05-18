@@ -1,6 +1,6 @@
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
-    console.log('DEBUG - onIncompletePaymentFound:', payment.identifier);
+    console.log("DEBUG [onIncompletePaymentFound] Payment ID:", payment.identifier);
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
     try {
@@ -10,6 +10,7 @@ async function onIncompletePaymentFound(payment) {
             body: JSON.stringify({ paymentId: payment.identifier })
         });
         let data = await res.json();
+        console.log("DEBUG [onIncompletePaymentFound] Response:", data);
         pendingIncompleteCount--;
         if (data.success) {
             updateStatus("Selesai");
@@ -20,7 +21,7 @@ async function onIncompletePaymentFound(payment) {
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
     } catch (e) {
-        console.log('DEBUG - onIncompletePaymentFound error:', e.message);
+        console.error("DEBUG [onIncompletePaymentFound] Error:", e.message);
         pendingIncompleteCount--;
         updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
@@ -29,13 +30,14 @@ async function onIncompletePaymentFound(payment) {
 }
 
 async function bersihkanSebelumBayar() {
-    console.log('DEBUG - bersihkanSebelumBayar dipanggil');
+    console.log("DEBUG [bersihkanSebelumBayar] Started");
     try {
         const payments = await Pi.getIncompletePayments();
-        console.log('DEBUG - incomplete payments:', payments ? payments.length : 0);
+        console.log("DEBUG [bersihkanSebelumBayar] Incomplete payments count:", payments ? payments.length : 0);
         if (payments && payments.length > 0) {
             updateStatus("Membersihkan transaksi terdahulu...");
             for (let p of payments) {
+                console.log("DEBUG [bersihkanSebelumBayar] Cleaning payment:", p.identifier);
                 await fetch("/api/cuci.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -45,19 +47,26 @@ async function bersihkanSebelumBayar() {
             updateStatus("Sedia untuk pembayaran baru.");
         }
     } catch (e) {
-        console.log('DEBUG - bersihkanSebelumBayar error:', e.message);
+        console.error("DEBUG [bersihkanSebelumBayar] Error:", e.message);
     }
 }
 
-// ========== BELI PRODUK (U2A) ==========
+// ========== U2A: BELI PRODUK (STABIL) ==========
 async function buyProduct(key, amount) {
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
+    if (!currentUser) { 
+        updateStatus("Sila login dahulu.");
+        console.log("DEBUG [buyProduct] No currentUser");
+        return; 
+    }
     
     if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
+        console.log("DEBUG [buyProduct] Echelon already purchased, showing report");
         showEchelonReport();
         return;
     }
     if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
+        console.log("DEBUG [buyProduct] Command already purchased, showing content");
         showLockedContent('command');
         return;
     }
@@ -65,11 +74,14 @@ async function buyProduct(key, amount) {
     await bersihkanSebelumBayar();
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
+    console.log("DEBUG [buyProduct] Creating payment for", total, "Pi");
+    
     Pi.createPayment(
         { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
+                console.log("DEBUG [buyProduct] onReadyForServerApproval - paymentId:", id);
                 fetch("/api/bayar-sah.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -77,118 +89,96 @@ async function buyProduct(key, amount) {
                 });
             },
             onReadyForServerCompletion: function(id, txid) {
+                console.log("DEBUG [buyProduct] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
                 fetch("/api/bayar-selesai.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid })
                 }).then(function() {
                     updateStatus("Berjaya!");
+                    console.log("DEBUG [buyProduct] Payment completed successfully");
                     
                     if (key === "echelon") {
-                        if (!localStorage.getItem('mb-legacy-bought-echelon')) {
-                            if (typeof showSuccessPopup === 'function') {
-                                showSuccessPopup("✅ PURCHASE SUCCESSFUL!", "THE ECHELON BRIEFING PACK is now available.", "OK");
-                            } else {
-                                alert("Purchase successful!");
-                            }
-                        }
                         localStorage.setItem('mb-legacy-bought-echelon', 'true');
                         currentUser.boughtEchelon = true;
                         showEchelonReport();
                     }
                     if (key === "command") {
-                        if (!localStorage.getItem('mb-legacy-bought-command')) {
-                            if (typeof showSuccessPopup === 'function') {
-                                showSuccessPopup("✅ PURCHASE SUCCESSFUL!", "THE COMMAND CENTER SUITE is now available.", "OK");
-                            } else {
-                                alert("Purchase successful!");
-                            }
-                        }
                         localStorage.setItem('mb-legacy-bought-command', 'true');
                         currentUser.boughtCommand = true;
                         showLockedContent("command");
                     }
                 }).catch(async function() {
+                    console.error("DEBUG [buyProduct] Completion failed, cleaning up");
                     await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
                 });
             },
-            onCancel: function() { updateStatus("Dibatalkan"); },
-            onError: function(e) { updateStatus("Ralat: " + e.message); }
+            onCancel: function() { 
+                console.log("DEBUG [buyProduct] Payment cancelled");
+                updateStatus("Dibatalkan"); 
+            },
+            onError: function(e) { 
+                console.error("DEBUG [buyProduct] Payment error:", e.message);
+                updateStatus("Ralat: " + e.message); 
+            }
         }
     );
 }
 
-// ========== CLAIM A2U ==========
+// ========== A2U: CLAIM REWARD (PIAWAIAN) ==========
 async function requestPayout() {
-    console.log('DEBUG - requestPayout dipanggil');
-    updateStatus("Authenticate...");
+    console.log("DEBUG [requestPayout] Called");
+    if (!currentUser) { 
+        updateStatus("Sila login dahulu.");
+        console.log("DEBUG [requestPayout] No currentUser");
+        return; 
+    }
     
-    try {
-        console.log('DEBUG - memanggil Pi.authenticate');
-        const scopes = ["username", "payments", "wallet_address"];
-        const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
-        
-        console.log('DEBUG - auth berjaya, uid:', auth.user.uid);
-        console.log('DEBUG - accessToken ada:', !!auth.accessToken);
-        
-        const userId = auth.user.uid;
-        const accessToken = auth.accessToken;
-        
-        const userData = {
-            uid: userId,
-            username: auth.user.username,
-            wallet_address: auth.user.wallet_address || "",
-            accessToken: accessToken,
-            timestamp: Date.now()
-        };
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        
-        if (typeof currentUser !== 'undefined') {
-            currentUser = userData;
-        }
-        
-        const loginBtn = document.getElementById("btn-login");
-        if (loginBtn) loginBtn.style.display = "none";
-        
-        updateStatus("Logged in as: " + auth.user.username);
-        
-        await bersihkanSebelumBayar();
-        updateStatus("Memproses ganjaran...");
-        
-        console.log('DEBUG - menghantar fetch ke /api/bayar-keluar.js');
-        console.log('DEBUG - body:', JSON.stringify({ uid: userId, amount: 0.1, hasToken: !!accessToken }));
-        
-        const response = await fetch("/api/bayar-keluar.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                uid: userId,
-                accessToken: accessToken,
-                amount: 0.1,
-                memo: "A2U Reward - MB Legacy Store"
-            })
-        });
-        
-        console.log('DEBUG - response status:', response.status);
-        
-        const result = await response.json();
-        console.log('DEBUG - result:', JSON.stringify(result));
-        
-        if (result.success) {
-            updateStatus("0.1 Pi dihantar!");
-            if (typeof showSuccessPopup === 'function') {
-                showSuccessPopup("✅ REWARD RECEIVED!", "TXID: " + (result.txid || "N/A"), "OK");
+    console.log("DEBUG [requestPayout] currentUser.uid:", currentUser.uid);
+    await bersihkanSebelumBayar();
+    updateStatus("Mencipta A2U...");
+    
+    Pi.createPayment(
+        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
+        {
+            onIncompletePaymentFound: onIncompletePaymentFound,
+            onReadyForServerApproval: function(id) {
+                console.log("DEBUG [requestPayout] onReadyForServerApproval - paymentId:", id);
+                fetch("/api/bayar-keluar.js", { 
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ paymentId: id, action: "approve" }) 
+                });
+            },
+            onReadyForServerCompletion: function(id, txid) {
+                console.log("DEBUG [requestPayout] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
+                fetch("/api/bayar-keluar.js", { 
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) 
+                })
+                .then(function() { 
+                    updateStatus("0.1 Pi dihantar!");
+                    console.log("DEBUG [requestPayout] A2U completed successfully");
+                    if (typeof showSuccessPopup === 'function') {
+                        showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
+                    }
+                })
+                .catch(async function() {
+                    console.error("DEBUG [requestPayout] Completion failed, cleaning up");
+                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
+                    updateStatus("Pulih!");
+                });
+            },
+            onCancel: function() { 
+                console.log("DEBUG [requestPayout] Payment cancelled");
+                updateStatus("Dibatalkan"); 
+            },
+            onError: function(e) { 
+                console.error("DEBUG [requestPayout] Payment error:", e.message);
+                updateStatus("Ralat: " + e.message); 
             }
-        } else {
-            console.log('DEBUG - gagal:', result.error);
-            updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
-        
-    } catch (error) {
-        console.log('DEBUG - error:', error.message);
-        updateStatus("Error: " + error.message);
-        const loginBtn = document.getElementById("btn-login");
-        if (loginBtn) loginBtn.style.display = "block";
-    }
-    }
+    );
+                            }

@@ -1,5 +1,6 @@
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
+    console.log('DEBUG - onIncompletePaymentFound:', payment.identifier);
     updateStatus("Menyelesaikan pembayaran tertunda...");
     pendingIncompleteCount++;
     try {
@@ -19,6 +20,7 @@ async function onIncompletePaymentFound(payment) {
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
     } catch (e) {
+        console.log('DEBUG - onIncompletePaymentFound error:', e.message);
         pendingIncompleteCount--;
         updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
@@ -27,8 +29,10 @@ async function onIncompletePaymentFound(payment) {
 }
 
 async function bersihkanSebelumBayar() {
+    console.log('DEBUG - bersihkanSebelumBayar dipanggil');
     try {
         const payments = await Pi.getIncompletePayments();
+        console.log('DEBUG - incomplete payments:', payments ? payments.length : 0);
         if (payments && payments.length > 0) {
             updateStatus("Membersihkan transaksi terdahulu...");
             for (let p of payments) {
@@ -40,7 +44,9 @@ async function bersihkanSebelumBayar() {
             }
             updateStatus("Sedia untuk pembayaran baru.");
         }
-    } catch (e) {}
+    } catch (e) {
+        console.log('DEBUG - bersihkanSebelumBayar error:', e.message);
+    }
 }
 
 // ========== BELI PRODUK (U2A) ==========
@@ -115,17 +121,20 @@ async function buyProduct(key, amount) {
 
 // ========== CLAIM A2U (SDK + BEARER + TXID) ==========
 async function requestPayout() {
+    console.log('DEBUG - requestPayout dipanggil');
     updateStatus("Authenticate...");
     
     try {
-        // ========== Pi.authenticate dengan 2 parameter (SDK) ==========
+        console.log('DEBUG - memanggil Pi.authenticate');
         const scopes = ["username", "payments", "wallet_address"];
         const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
         
-        const userId = auth.user.uid;
-        const accessToken = auth.accessToken;  // Bearer token
+        console.log('DEBUG - auth berjaya, uid:', auth.user.uid);
+        console.log('DEBUG - accessToken ada:', !!auth.accessToken);
         
-        // Simpan ke localStorage
+        const userId = auth.user.uid;
+        const accessToken = auth.accessToken;
+        
         const userData = {
             uid: userId,
             username: auth.user.username,
@@ -140,39 +149,41 @@ async function requestPayout() {
         }
         document.getElementById("btn-login").style.display = "none";
         updateStatus(auth.user.username);
-        // ========== TAMAT AUTHENTICATE ==========
         
         await bersihkanSebelumBayar();
         updateStatus("Memproses ganjaran...");
         
-        // ========== HANTAR UID + BEARER TOKEN + AMOUNT ==========
+        console.log('DEBUG - menghantar fetch ke /api/bayar-keluar.js');
+        console.log('DEBUG - body:', JSON.stringify({ uid: userId, amount: 0.1, hasToken: !!accessToken }));
+        
         const response = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 uid: userId,
-                accessToken: accessToken,   // Bearer
+                accessToken: accessToken,
                 amount: 0.1,
                 memo: "A2U Reward - MB Legacy Store"
             })
         });
         
+        console.log('DEBUG - response status:', response.status);
+        
         const result = await response.json();
+        console.log('DEBUG - result:', JSON.stringify(result));
         
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");
             if (typeof showSuccessPopup === 'function') {
-                showSuccessPopup(
-                    "✅ REWARD RECEIVED!",
-                    "0.1 Test-Pi has been sent to your wallet.\nTXID: " + (result.txid || "N/A"),
-                    "OK"
-                );
+                showSuccessPopup("✅ REWARD RECEIVED!", "TXID: " + (result.txid || "N/A"), "OK");
             }
         } else {
+            console.log('DEBUG - gagal:', result.error);
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
         
     } catch (error) {
+        console.log('DEBUG - error:', error.message);
         updateStatus("Error: " + error.message);
         document.getElementById("btn-login").style.display = "block";
     }

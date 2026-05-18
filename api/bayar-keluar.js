@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         
         const BASE_URL = "https://api.minepi.com/v2";
         
-        // Sahkan access token
+        // Sahkan access token (Bearer)
         const meRes = await fetch(`${BASE_URL}/me`, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
@@ -37,8 +37,8 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: "UID tidak sepadan" });
         }
         
-        // Cipta pembayaran
-        const createRes = await fetch(`${BASE_URL}/payments`, {
+        // Cipta pembayaran A2U (URL diperbetulkan)
+        const createRes = await fetch(`${BASE_URL}/payments/a2u`, {
             method: "POST",
             headers: { "Authorization": `Key ${API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 

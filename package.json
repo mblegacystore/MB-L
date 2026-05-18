@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "Platform Pi Commerce Malaysia – Selamat, Stabil, Dipercayai",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "start": "vercel dev"
   },

@@ -1,4 +1,10 @@
-import axios from 'axios';
+import Pi from 'pi-backend';
+
+const pi = new Pi({
+    apiKey: process.env.PI_API_KEY_TESTNET,
+    walletPrivateSeed: process.env.WALLET_PRIVATE_SEED,
+    baseURL: "https://api.minepi.com/v2"
+});
 
 export default async function handler(req, res) {
     try {
@@ -16,48 +22,40 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: "Access token missing" });
         }
         
-        const API_KEY = process.env.PI_API_KEY_TESTNET;
-        const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+        // Sahkan access token
+        const me = await pi.getUser(accessToken);
         
-        const BASE_URL = "https://api.minepi.com/v2";
+        if (!me || me.uid !== uid) {
+            return res.status(401).json({ success: false, error: "Access token tidak sah" });
+        }
         
-        // Sahkan token (Bearer)
-        const meRes = await axios.get(`${BASE_URL}/me`, {
-            headers: { "Authorization": `Bearer ${accessToken}` }
-        });
-        
-        // Cipta pembayaran (Key)
-        const createRes = await axios.post(`${BASE_URL}/payments`, {
+        // Cipta pembayaran A2U
+        const paymentData = {
             amount: parseFloat(amount),
-            memo: memo || "A2U",
+            memo: memo || "A2U Reward",
             uid: uid,
             metadata: { source: "claim_reward" }
-        }, {
-            headers: { "Authorization": `Key ${API_KEY}` }
-        });
+        };
         
-        const paymentId = createRes.data.identifier;
+        const paymentId = await pi.createPayment(paymentData);
         
         // Submit
-        const submitRes = await axios.post(`${BASE_URL}/payments/${paymentId}/submit`, {
-            seed: WALLET_SEED
-        }, {
-            headers: { "Authorization": `Key ${API_KEY}` }
-        });
+        const txid = await pi.submitPayment(paymentId);
         
         // Complete
-        await axios.post(`${BASE_URL}/payments/${paymentId}/complete`, {
-            txid: submitRes.data.txid
-        }, {
-            headers: { "Authorization": `Key ${API_KEY}` }
+        const payment = await pi.completePayment(paymentId, txid);
+        
+        return res.status(200).json({ 
+            success: true, 
+            message: "0.1 Pi berjaya dihantar!",
+            paymentId: paymentId,
+            txid: txid
         });
         
-        return res.status(200).json({ success: true, message: "Berjaya!" });
-        
     } catch (error) {
-        return res.status(error.response?.status || 500).json({ 
+        return res.status(400).json({ 
             success: false, 
-            error: error.response?.data?.message || error.message 
+            error: error.message || "Gagal" 
         });
     }
 }

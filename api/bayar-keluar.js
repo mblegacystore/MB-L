@@ -1,97 +1,174 @@
-const axios = require('axios');
-const StellarSdk = require('stellar-sdk');
+import axios from 'axios';
+import * as StellarSdk from 'stellar-sdk';
 
-// Storage simple untuk lock user. Elak spam serentak
-const lockMap = new Map();
+// Storage untuk elak double payment
+const paymentStore = {};
 
-const keypair = StellarSdk.Keypair.fromSecret(process.env.WALLET_PRIVATE_SEED);
-const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
-
-module.exports = async function handler(req, res) {
-    if (req.method!== 'POST') {
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { amount, uid, accessToken, metadata } = req.body;
+    const { amount, uid, metadata, accessToken, action, paymentId, txid } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
+    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+    const PI_API_BASE = 'https://api.minepi.com/v2/payments';
 
-    if (!amount ||!uid ||!accessToken) {
-        return res.status(400).json({ error: 'amount, uid, accessToken required' });
+    if (!API_KEY || !WALLET_SEED) {
+        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // GUARD 1: Lock per user. Kalau user spam 10x, 9 request akan queue/tolak
-    if (lockMap.get(uid)) {
-        return res.status(429).json({ error: 'Transaction in progress. Please wait.' });
+    // ============================================
+    // 1. CLEAN (untuk expired/pending)
+    // ============================================
+    if (action === 'clean' && paymentId) {
+        try {
+            await axios.post(`${PI_API_BASE}/${paymentId}/cancel`, {}, {
+                headers: { 'Authorization': `Key ${API_KEY}` }
+            });
+            delete paymentStore[paymentId];
+            return res.status(200).json({ success: true });
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
     }
-    lockMap.set(uid, true);
 
-    const headers = { Authorization: 'Key ' + API_KEY };
-    const idempotency = metadata && metadata.idempotency? metadata.idempotency : 'payout-' + uid + '-' + Date.now();
+    // ============================================
+    // 2. COMPLETE (untuk selesaikan payment tergendala)
+    // ============================================
+    if (action === 'complete' && paymentId && txid) {
+        try {
+            await axios.post(`${PI_API_BASE}/${paymentId}/complete`, { txid }, {
+                headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' }
+            });
+            paymentStore[paymentId].status = 'completed';
+            return res.status(200).json({ success: true });
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
+    }
+
+    // ============================================
+    // 3. A2U: CREATE → SIGN → SUBMIT → COMPLETE
+    // ============================================
+    if (!uid || !amount) {
+        return res.status(400).json({ error: "Data tak lengkap" });
+    }
+
+    // ✅ BEARER VALIDATION (WAJIB)
+    if (!accessToken) {
+        return res.status(400).json({ error: "Access token missing" });
+    }
 
     try {
-        // GUARD 2: Validate Bearer - SOP WAJIB
-        await axios.get('https://api.minepi.com/v2/me', {
-            headers: { Authorization: 'Bearer ' + accessToken }
+        // ✅ VALIDASI BEARER TOKEN
+        const meRes = await axios.get('https://api.minepi.com/v2/me', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+        if (!meRes.data?.uid) {
+            return res.status(401).json({ error: "Invalid access token" });
+        }
 
-        // GUARD 3: Clean semua incomplete SEBELUM create. Ni kunci bebas pending
-        const searchRes = await axios.get('https://api.minepi.com/v2/payments?uid=' + uid + '&direction=app_to_user', { headers });
-        const payments = searchRes.data && searchRes.data.data? searchRes.data.data : [];
+        // ✅ CEK INCOMPLETE PAYMENTS (elak sequence lock)
+        const searchRes = await axios.get(`${PI_API_BASE}?uid=${uid}&direction=app_to_user`, {
+            headers: { 'Authorization': `Key ${API_KEY}` }
+        });
+        const incompletePayments = searchRes.data.payments || [];
 
-        for (let i = 0; i < payments.length; i++) {
-            const p = payments[i];
-            // Kalau takde transaction = stuck kat approval → cancel
-            // Kalau ada transaction tapi takde txid = stuck kat submit → complete
-            if (!p.transaction) {
-                await axios.post('https://api.minepi.com/v2/payments/' + p.identifier + '/cancel', {}, { headers }).catch(function(){});
-            } else if (p.transaction &&!p.transaction.txid) {
-                // Payment dah sign tapi tak complete. Kita complete kan
-                await axios.post('https://api.minepi.com/v2/payments/' + p.identifier + '/complete', { txid: p.transaction.txid }, { headers }).catch(function(){});
+        for (const p of incompletePayments) {
+            if (p.status?.developer_completed || p.status?.cancelled) continue;
+            if (p.transaction?.txid) {
+                await axios.post(`${PI_API_BASE}/${p.identifier}/complete`, { txid: p.transaction.txid }, {
+                    headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' }
+                });
+            } else {
+                await axios.post(`${PI_API_BASE}/${p.identifier}/cancel`, {}, {
+                    headers: { 'Authorization': `Key ${API_KEY}` }
+                });
             }
         }
 
-        // GUARD 4: Create baru. Amount WAJIB string 7dp ikut SOP
-        const amountStr = Number(amount).toFixed(7);
-        const createRes = await axios.post(
-            'https://api.minepi.com/v2/payments',
+        // CREATE PAYMENT
+        const createResponse = await axios.post(
+            PI_API_BASE,
             {
-                amount: amountStr,
-                memo: 'Payout',
+                amount: amount,
+                memo: 'MB-LEGACY-A2U',
+                metadata: metadata || { source: 'claim_reward', timestamp: Date.now() },
                 uid: uid,
-                metadata: {...metadata, idempotency: idempotency }
             },
-            { headers: headers }
+            {
+                headers: {
+                    'Authorization': `Key ${API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            }
         );
 
-        const paymentId = createRes.data.identifier;
-        const xdr = createRes.data.transaction.to_sign;
+        const paymentId = createResponse.data.identifier;
+        const txXdr = createResponse.data.transaction?.to_sign;
 
-        // GUARD 5: Sign Stellar - SOP WAJIB
-        const tx = new StellarSdk.Transaction(xdr, StellarSdk.Networks.TESTNET);
-        tx.sign(keypair);
-        const submitRes = await server.submitTransaction(tx);
-        const txid = submitRes.hash;
-
-        // GUARD 6: Submit + Complete Pi - SOP WAJIB
-        await axios.post('https://api.minepi.com/v2/payments/' + paymentId + '/submit', { txid: txid }, { headers: headers });
-        await axios.post('https://api.minepi.com/v2/payments/' + paymentId + '/complete', { txid: txid }, { headers: headers });
-
-        lockMap.delete(uid); // Release lock
-        return res.status(200).json({ success: true, paymentId: paymentId, txid: txid });
-
-    } catch (e) {
-        lockMap.delete(uid); // Release lock walaupun error
-        const errData = e.response? e.response.data : null;
-        console.error('A2U_ERROR:', errData || e.message);
-
-        // GUARD 7: Kalau error 400 pending_payment_exists, retry clean sekali lagi
-        if (e.response && e.response.status === 400 && errData && errData.error === 'pending_payment_exists') {
-            return res.status(409).json({ error: 'Pending payment detected. Please retry.', detail: errData });
+        if (!txXdr) {
+            throw new Error('Transaction XDR missing from creation response.');
         }
 
+        // ✅ SIMPAN paymentId (elak double payment)
+        paymentStore[paymentId] = {
+            uid: uid,
+            amount: amount,
+            status: 'created',
+            createdAt: Date.now()
+        };
+
+        // SIGN TRANSACTION (Stellar SDK)
+        const networkPassphrase = StellarSdk.Networks.TESTNET;
+        const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
+        const transaction = new StellarSdk.Transaction(txXdr, networkPassphrase);
+        transaction.sign(keypair);
+        const signedTxXdr = transaction.toEnvelope().toXDR('base64');
+
+        // SUBMIT PAYMENT
+        const submitResponse = await axios.post(
+            `${PI_API_BASE}/${paymentId}/submit`,
+            { txid: signedTxXdr },
+            {
+                headers: {
+                    'Authorization': `Key ${API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        const txid = submitResponse.data.txid;
+        paymentStore[paymentId].txid = txid;
+        paymentStore[paymentId].status = 'submitted';
+
+        // COMPLETE PAYMENT
+        await axios.post(
+            `${PI_API_BASE}/${paymentId}/complete`,
+            { txid: txid },
+            {
+                headers: {
+                    'Authorization': `Key ${API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        paymentStore[paymentId].status = 'completed';
+
+        return res.status(200).json({
+            success: true,
+            message: "0.1 Test-Pi berjaya dihantar!",
+            paymentId: paymentId,
+            txid: txid
+        });
+
+    } catch (error) {
+        console.error("A2U Error:", error.response?.data || error.message);
         return res.status(500).json({
-            error: errData && errData.error? errData.error : e.message,
-            detail: errData
+            success: false,
+            error: error.response?.data?.error || error.message
         });
     }
-                         }
+}

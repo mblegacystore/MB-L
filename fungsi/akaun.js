@@ -13,7 +13,8 @@ async function doLogin(isSilent = false) {
         currentUser = {
             uid: auth.user.uid,
             username: auth.user.username,
-            wallet_address: auth.user.wallet_address || ""
+            wallet_address: auth.user.wallet_address || "",
+            accessToken: auth.accessToken   // ✅ TAMBAH INI
         };
         
         // Simpan ke localStorage bersama timestamp segar
@@ -63,7 +64,8 @@ async function restoreSession() {
         currentUser = {
             uid: userData.uid,
             username: userData.username,
-            wallet_address: userData.wallet_address || ""
+            wallet_address: userData.wallet_address || "",
+            accessToken: userData.accessToken   // ✅ TAMBAH INI
         };
         
         updateStatus("Welcome back: " + currentUser.username);

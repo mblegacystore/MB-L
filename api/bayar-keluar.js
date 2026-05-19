@@ -11,8 +11,7 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const PI_ME = 'https://api.minepi.com/v2';
-    const PI_PAY = 'https://api.testnet.minepi.com';
+    const BASE = "https://api.minepi.com/v2";
 
     // 3. SEMAK KONFIGURASI (SOP)
     if (!API_KEY || !WALLET_SEED) {
@@ -26,24 +25,22 @@ export default async function handler(req, res) {
 
     // 5. SAHKAN ACCESS TOKEN (SOP - WAJIB)
     try {
-        const meRes = await axios.get(`${PI_ME}/me`, {
+        const meRes = await axios.get(`${BASE}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
         if (!meRes.data?.uid || meRes.data.uid !== uid) {
             return res.status(401).json({ error: "Access token tidak sah" });
         }
-
-        console.log("✅ Token sah:", meRes.data.username);
     } catch (error) {
         return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
     // 6. CIPTA, SIGN, SUBMIT, COMPLETE (SOP)
     try {
-        // 6a. CIPTA PEMBAYARAN (SOP)
+        // CIPTA PEMBAYARAN
         const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
-        const createRes = await axios.post(`${PI_PAY}/payments`, {
+        const createRes = await axios.post(`${BASE}/payments`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
             metadata: metadata || {},
@@ -59,22 +56,22 @@ export default async function handler(req, res) {
         const paymentId = createRes.data.identifier;
         const txXdr = createRes.data.transaction?.to_sign;
 
-        // 6b. TANDATANGAN (SOP)
+        // TANDATANGAN
         const keypair = Keypair.fromSecret(WALLET_SEED);
-        const tx = new Transaction(txXdr, Networks.TESTNET);
+        const tx = new Transaction(txXdr, Networks.PUBLIC);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
 
-        // 6c. SUBMIT (SOP)
+        // SUBMIT
         const submitRes = await axios.post(
-            `${PI_PAY}/payments/${paymentId}/submit`,
+            `${BASE}/payments/${paymentId}/submit`,
             { txid: signedTxXdr },
             { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
         );
 
-        // 6d. COMPLETE (SOP - WAJIB)
+        // COMPLETE
         await axios.post(
-            `${PI_PAY}/payments/${paymentId}/complete`,
+            `${BASE}/payments/${paymentId}/complete`,
             { txid: submitRes.data.txid },
             { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
         );

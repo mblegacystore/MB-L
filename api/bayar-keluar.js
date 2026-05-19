@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
     // 1. METHOD CHECK (SOP)
@@ -8,24 +7,17 @@ export default async function handler(req, res) {
     }
 
     // 2. INPUT & KONFIGURASI
-    const { uid, amount, accessToken, metadata } = req.body;
+    const { uid, accessToken } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
-    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const BASE = "https://api.minepi.com/v2";
 
-    // 3. SEMAK KONFIGURASI (SOP)
-    if (!API_KEY || !WALLET_SEED) {
-        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
+    // 3. SEMAK PARAMETER (SOP)
+    if (!uid || !accessToken) {
+        return res.status(400).json({ error: "Parameter uid, accessToken diperlukan" });
     }
 
-    // 4. SEMAK PARAMETER (SOP)
-    if (!uid || !amount || !accessToken) {
-        return res.status(400).json({ error: "Parameter uid, amount, accessToken diperlukan" });
-    }
-
-    // 5. SAHKAN ACCESS TOKEN (SOP - WAJIB)
+    // 4. SAHKAN ACCESS TOKEN (SOP - WAJIB)
     try {
-        const meRes = await axios.get(`${BASE}/me`, {
+        const meRes = await axios.get('https://api.minepi.com/v2/me', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
@@ -36,55 +28,44 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
-    // 6. CIPTA, SIGN, SUBMIT, COMPLETE (SOP)
-    try {
-        // CIPTA PEMBAYARAN
-        const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
-        const createRes = await axios.post(`${BASE}/payments`, {
-            amount: parseFloat(amount),
-            memo: 'MB-LEGACY-A2U',
-            metadata: metadata || {},
-            uid: uid
-        }, {
-            headers: {
-                'Authorization': `Key ${API_KEY}`,
-                'Content-Type': 'application/json',
-                'Idempotency-Key': idempotencyKey
-            }
-        });
+    // 5. UJI POST /payments PADA PELBAGAI URL
+    const urls = [
+        'https://api.minepi.com/v2/payments',
+        'https://api.minepi.com/payments',
+        'https://api.testnet.minepi.com/v2/payments',
+        'https://api.testnet.minepi.com/payments',
+    ];
 
-        const paymentId = createRes.data.identifier;
-        const txXdr = createRes.data.transaction?.to_sign;
+    const results = [];
 
-        // TANDATANGAN
-        const keypair = Keypair.fromSecret(WALLET_SEED);
-        const tx = new Transaction(txXdr, Networks.PUBLIC);
-        tx.sign(keypair);
-        const signedTxXdr = tx.toEnvelope().toXDR('base64');
+    for (const url of urls) {
+        try {
+            const res = await axios.post(url, {
+                amount: 0.1,
+                memo: 'TEST-SOP',
+                metadata: { test: true },
+                uid: uid
+            }, {
+                headers: {
+                    'Authorization': `Key ${API_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': `test-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+                },
+                validateStatus: (s) => true
+            });
 
-        // SUBMIT
-        const submitRes = await axios.post(
-            `${BASE}/payments/${paymentId}/submit`,
-            { txid: signedTxXdr },
-            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
-        );
+            results.push({
+                url,
+                status: res.status
+            });
 
-        // COMPLETE
-        await axios.post(
-            `${BASE}/payments/${paymentId}/complete`,
-            { txid: submitRes.data.txid },
-            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
-        );
-
-        return res.status(200).json({
-            success: true,
-            paymentId,
-            txid: submitRes.data.txid
-        });
-
-    } catch (error) {
-        const status = error.response?.status || 500;
-        const msg = error.response?.data?.error || error.message;
-        return res.status(status).json({ error: msg });
+        } catch (e) {
+            results.push({
+                url,
+                error: e.code || e.message
+            });
+        }
     }
+
+    return res.status(200).json({ results });
 }

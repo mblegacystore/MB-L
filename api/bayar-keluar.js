@@ -1,18 +1,15 @@
-// api/bayar-keluar.js - A2U LENGKAP MENGIKUT SOP PI NETWORK
+// api/bayar-keluar.js - A2U MENGIKUT SOP RASMI PI NETWORK
 import PiNetwork from 'pi-backend';
 
-// Storage sementara (elak double payment)
 const paymentStore = {};
 
 export default async function handler(req, res) {
-    // 1. HANYA TERIMA POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { uid, amount, memo, accessToken, action, paymentId, txid } = req.body;
 
-    // 2. DAPATKAN KREDENSIAL DARI ENVIRONMENT
     const apiKey = process.env.PI_API_KEY_TESTNET;
     const walletPrivateSeed = process.env.WALLET_PRIVATE_SEED;
 
@@ -20,11 +17,10 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // 3. INIT SDK
     const pi = new PiNetwork(apiKey, walletPrivateSeed);
 
     // ============================================
-    // CUCI REKOD LAMA (EXPIRED/PENDING)
+    // 1. CUCI REKOD LAMA (untuk payment tertentu)
     // ============================================
     if (action === 'clean' && paymentId) {
         try {
@@ -47,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================
-    // COMPLETE (untuk A2U step akhir)
+    // 2. COMPLETE (untuk A2U step akhir)
     // ============================================
     if (action === 'complete' && paymentId && txid) {
         try {
@@ -60,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================
-    // A2U: CREATE + SUBMIT + COMPLETE
+    // 3. A2U: CREATE + SUBMIT + COMPLETE (MENGIKUT SOP)
     // ============================================
     if (!uid || !amount) {
         return res.status(400).json({ error: "Data tak lengkap (uid/amount)" });
@@ -70,7 +66,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Access token missing" });
     }
 
-    // ✅ VALIDASI ACCESS TOKEN (BEARER)
+    // ✅ SOP: VALIDASI ACCESS TOKEN
     try {
         const meRes = await fetch("https://api.minepi.com/v2/me", {
             headers: { "Authorization": `Bearer ${accessToken}` }
@@ -83,17 +79,19 @@ export default async function handler(req, res) {
     }
 
     try {
-        // ✅ STEP 1: BERSIHKAN INCOMPLETE PAYMENTS
+        // ✅ SOP: SEMAK INCOMPLETE PAYMENTS UNTUK USER YANG SAMA
         const incompletePayments = await pi.getIncompleteServerPayments();
         for (const payment of incompletePayments) {
-            if (payment.transaction?.txid) {
-                await pi.completePayment(payment.identifier, payment.transaction.txid);
-            } else if (!payment.status?.cancelled) {
-                await pi.cancelPayment(payment.identifier);
+            if (payment.user_uid === uid) {  // ✅ hanya untuk user ini
+                if (payment.transaction?.txid) {
+                    await pi.completePayment(payment.identifier, payment.transaction.txid);
+                } else if (!payment.status?.cancelled) {
+                    await pi.cancelPayment(payment.identifier);
+                }
             }
         }
 
-        // ✅ STEP 2: CREATE PAYMENT
+        // ✅ SOP: CREATE PAYMENT
         const paymentId = await pi.createPayment({
             amount: parseFloat(amount),
             memo: memo || "A2U Reward - MB Legacy Store",
@@ -105,7 +103,7 @@ export default async function handler(req, res) {
             uid: uid
         });
 
-        // ✅ STEP 3: STORAGE – SIMPAN paymentId
+        // ✅ SOP: STORAGE – SIMPAN paymentId
         paymentStore[paymentId] = {
             uid: uid,
             amount: amount,
@@ -113,17 +111,17 @@ export default async function handler(req, res) {
             createdAt: new Date().toISOString()
         };
 
-        // ✅ STEP 4: SUBMIT PAYMENT KE BLOCKCHAIN
+        // ✅ SOP: SUBMIT PAYMENT KE BLOCKCHAIN
         const txid = await pi.submitPayment(paymentId);
 
-        // ✅ STEP 5: STORAGE – SIMPAN txid
+        // ✅ SOP: STORAGE – SIMPAN txid
         paymentStore[paymentId].txid = txid;
         paymentStore[paymentId].status = 'submitted';
 
-        // ✅ STEP 6: COMPLETE PAYMENT
+        // ✅ SOP: COMPLETE PAYMENT
         const completedPayment = await pi.completePayment(paymentId, txid);
 
-        // ✅ STEP 7: STORAGE – KEMASKINI STATUS
+        // ✅ SOP: STORAGE – KEMASKINI STATUS
         paymentStore[paymentId].status = 'completed';
         paymentStore[paymentId].completedAt = new Date().toISOString();
 

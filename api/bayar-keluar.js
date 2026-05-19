@@ -2,80 +2,90 @@ import axios from 'axios';
 import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
-    console.log("🚀 Fungsi bayar-keluar bermula");
-    
+    // ========== 1. SEMAK METHOD ==========
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Kaedah Tidak Dibenarkan' });
     }
 
+    // ========== 2. DAPATKAN INPUT ==========
     const { uid, amount, accessToken, metadata } = req.body;
-    console.log("📦 Request diterima:", { uid, amount, hasToken: !!accessToken });
-    
+
+    // ========== 3. KONFIGURASI ==========
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
     const PI_API = 'https://api.testnet.minepi.com/v2';
+    const PI_ME = 'https://api.minepi.com/v2'; // ME hanya di mainnet
 
-    // Semak konfigurasi
+    // ========== 4. SEMAK KONFIGURASI SERVER ==========
     if (!API_KEY || !WALLET_SEED) {
-        console.error("❌ Konfigurasi hilang:", { hasApiKey: !!API_KEY, hasSeed: !!WALLET_SEED });
+        console.error("Konfigurasi tidak lengkap");
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // Semak parameter
+    // ========== 5. SEMAK PARAMETER WAJIB ==========
     if (!uid || !amount || !accessToken) {
         return res.status(400).json({ error: "Parameter uid, amount, accessToken diperlukan" });
     }
 
-    // Sahkan amount
+    // ========== 6. SAHKAN AMOUNT ==========
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
         return res.status(400).json({ error: "Amount tidak sah" });
     }
 
-    // LANGKAU VALIDASI ACCESS TOKEN untuk testnet
-    // Untuk production, gunakan kod di bawah
-    /*
+    // ========== 7. SAHKAN ACCESS TOKEN (SOP: WAJIB) ==========
     try {
-        const meRes = await axios.get('https://api.minepi.com/v2/me', {
+        const meRes = await axios.get(`${PI_ME}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+
         if (!meRes.data?.uid) {
-            return res.status(401).json({ error: "Invalid access token" });
+            return res.status(401).json({ error: "Access token tidak sah" });
         }
+
+        // SOP: UID dari token MESTI sama dengan UID request
+        if (meRes.data.uid !== uid) {
+            return res.status(401).json({ error: "UID tidak sepadan dengan token" });
+        }
+
+        console.log("✅ Token disahkan untuk:", meRes.data.username);
     } catch (error) {
-        return res.status(401).json({ error: "Token validation failed" });
+        const status = error.response?.status || 500;
+        const msg = error.response?.data?.error || "Gagal mengesahkan access token";
+        return res.status(status).json({ error: msg });
     }
-    */
 
     try {
-        // 1. CIPTA PEMBAYARAN
+        // ========== 8. CIPTA PEMBAYARAN ==========
+        // SOP: Guna POST /payments (BUKAN /payments/create)
+        // SOP: WAJIB sertakan Idempotency-Key
         const idempotencyKey = `a2u-${uid}-${numericAmount}-${Date.now()}`;
-        console.log("🔑 Idempotency Key:", idempotencyKey);
         
         const createRes = await axios.post(`${PI_API}/payments`, {
             amount: numericAmount,
-            memo: 'MB-LEGACY-A2U',
-            metadata: metadata || {},
+            memo: 'MB-LEGACY-A2U', // SOP: Memo pilihan tapi disyorkan
+            metadata: metadata || {}, // SOP: Metadata mesti objek JSON
             uid: uid
         }, {
             headers: {
                 'Authorization': `Key ${API_KEY}`,
-                'Idempotency-Key': idempotencyKey,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempotencyKey // SOP: WAJIB
             }
         });
 
         const paymentId = createRes.data.identifier;
         const txXdr = createRes.data.transaction?.to_sign;
-        
+
         if (!txXdr) {
-            console.error("❌ XDR hilang:", createRes.data);
+            console.error("XDR missing:", createRes.data);
             throw new Error('Transaction XDR missing dari Pi API');
         }
-        
+
         console.log("✅ Pembayaran dicipta:", paymentId);
 
-        // 2. TANDATANGANI TRANSAKSI
+        // ========== 9. TANDATANGANI TRANSAKSI ==========
+        // SOP: Guna Stellar SDK, tandatangan dengan wallet seed server
         let signedTxXdr;
         try {
             const keypair = Keypair.fromSecret(WALLET_SEED);
@@ -84,16 +94,18 @@ export default async function handler(req, res) {
             signedTxXdr = tx.toEnvelope().toXDR('base64');
             console.log("✅ Transaksi ditandatangani");
         } catch (stellarError) {
-            console.error("❌ Ralat Stellar:", stellarError);
+            console.error("Ralat Stellar:", stellarError);
             return res.status(500).json({ 
                 error: "Gagal menandatangani transaksi",
                 details: stellarError.message 
             });
         }
 
-        // 3. HANTAR TRANSAKSI
-        const submitRes = await axios.post(`${PI_API}/payments/${paymentId}/submit`, 
-            { txid: signedTxXdr }, 
+        // ========== 10. HANTAR TRANSAKSI ==========
+        // SOP: POST /payments/:paymentId/submit
+        const submitRes = await axios.post(
+            `${PI_API}/payments/${paymentId}/submit`,
+            { txid: signedTxXdr },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
@@ -105,9 +117,11 @@ export default async function handler(req, res) {
         const txid = submitRes.data.txid;
         console.log("✅ Transaksi dihantar:", txid);
 
-        // 4. LENGKAPKAN PEMBAYARAN
-        const completeRes = await axios.post(`${PI_API}/payments/${paymentId}/complete`, 
-            { txid }, 
+        // ========== 11. LENGKAPKAN PEMBAYARAN ==========
+        // SOP: POST /payments/:paymentId/complete
+        const completeRes = await axios.post(
+            `${PI_API}/payments/${paymentId}/complete`,
+            { txid },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
@@ -115,14 +129,15 @@ export default async function handler(req, res) {
                 }
             }
         );
-        
-        console.log("✅ Pembayaran lengkap:", completeRes.data.status);
 
-        return res.status(200).json({ 
-            success: true, 
-            paymentId, 
+        console.log("✅ Pembayaran lengkap:", completeRes.data);
+
+        // ========== 12. RESPONS BERJAYA ==========
+        return res.status(200).json({
+            success: true,
+            paymentId,
             txid,
-            status: completeRes.data.status
+            status: completeRes.data.status || 'completed'
         });
 
     } catch (error) {
@@ -131,13 +146,10 @@ export default async function handler(req, res) {
             response: error.response?.data,
             status: error.response?.status
         });
-        
+
         const status = error.response?.status || 500;
-        const msg = error.response?.data?.error || error.message;
-        
-        return res.status(status).json({ 
-            error: msg,
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        const msg = error.response?.data?.error || error.message || "Ralat tidak diketahui";
+
+        return res.status(status).json({ error: msg });
     }
-}
+            }

@@ -10,50 +10,44 @@ export default async function handler(req, res) {
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
 
-    if (!API_KEY || !WALLET_SEED) {
-        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
-    }
-
     if (!uid || !amount || !accessToken) {
         return res.status(400).json({ error: "Parameter diperlukan" });
     }
 
-    // 1. SAHKAN TOKEN
+    // 1. ME
     try {
         const meRes = await axios.get('https://api.minepi.com/v2/me', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-
-        if (!meRes.data?.uid || meRes.data.uid !== uid) {
-            return res.status(401).json({ error: "Access token tidak sah" });
-        }
+        console.log("✅ ME OK:", meRes.data.username);
     } catch (error) {
-        return res.status(401).json({ error: "Gagal mengesahkan access token" });
+        return res.status(401).json({ error: "Token tidak sah" });
     }
 
-    // 2. A2U GUNA SDK RASMI
+    // 2. CREATE PAYMENT SAHAJA - TAK SUBMIT, TAK COMPLETE
     try {
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
-
+        
+        console.log("💳 Cuba createPayment...");
         const paymentId = await pi.createPayment({
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
             metadata: metadata || {},
             uid: uid
         });
-
-        const txid = await pi.submitPayment(paymentId);
-        await pi.completePayment(paymentId, txid);
-
+        
+        console.log("✅ Payment ID:", paymentId);
+        
         return res.status(200).json({
             success: true,
-            paymentId,
-            txid
+            message: "Payment created - TIDAK DIHANTAR",
+            paymentId
         });
-
+        
     } catch (error) {
-        return res.status(error.status || 500).json({
-            error: error.message || "Ralat pembayaran"
+        console.error("❌ Gagal:", error.message);
+        return res.status(500).json({
+            error: error.message
         });
     }
 }

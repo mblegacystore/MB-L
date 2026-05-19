@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as StellarSdk from 'stellar-sdk';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

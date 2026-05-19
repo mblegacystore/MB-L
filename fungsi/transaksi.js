@@ -136,6 +136,7 @@ async function requestPayout() {
     
     console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
+    console.log("UID:", currentUser.uid);
     
     updateStatus("Memproses ganjaran...");
     

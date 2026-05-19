@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const PI_API_BASE = 'https://api.minepi.com/v2/payments';
+    const PI_API_BASE = 'https://api.testnet.minepi.com/v2/payments';
 
     if (!API_KEY || !WALLET_SEED) {
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });

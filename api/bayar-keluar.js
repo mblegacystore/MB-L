@@ -1,55 +1,83 @@
 import axios from 'axios';
+import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
-    // 1. METHOD CHECK (SOP)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Kaedah Tidak Dibenarkan' });
     }
 
-    // 2. INPUT
-    const { uid, accessToken } = req.body;
+    const { uid, amount, accessToken, metadata } = req.body;
+    const API_KEY = process.env.PI_API_KEY_TESTNET;
+    const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
     const BASE = 'https://api.minepi.com/v2';
 
-    // 3. SEMAK PARAMETER
-    if (!uid || !accessToken) {
-        return res.status(400).json({ error: "Parameter uid, accessToken diperlukan" });
+    if (!API_KEY || !WALLET_SEED) {
+        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // 4. LOG INPUT
-    console.log("📦 INPUT:");
-    console.log("   uid:", uid);
-    console.log("   token length:", accessToken?.length);
-    console.log("   token prefix:", accessToken?.substring(0, 30) + '...');
-    console.log("   token suffix:", '...' + accessToken?.substring(accessToken.length - 10));
+    if (!uid || !amount || !accessToken) {
+        return res.status(400).json({ error: "Parameter diperlukan" });
+    }
 
-    // 5. TEST ME SAHAJA - TIADA TRANSAKSI
+    // SAHKAN TOKEN
     try {
-        console.log("🔍 TEST: ME dengan token");
         const meRes = await axios.get(`${BASE}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+
+        if (!meRes.data?.uid || meRes.data.uid !== uid) {
+            return res.status(401).json({ error: "Access token tidak sah" });
+        }
+    } catch (error) {
+        return res.status(401).json({ error: "Gagal mengesahkan access token" });
+    }
+
+    // A2U PAYMENT
+    try {
+        const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
         
-        console.log("✅ ME OK:", meRes.data.username);
-        console.log("   UID dari ME:", meRes.data.uid);
-        console.log("   UID dari request:", uid);
-        console.log("   UID sama?", meRes.data.uid === uid);
-        
+        const createRes = await axios.post(`${BASE}/payments`, {
+            amount: parseFloat(amount),
+            memo: 'MB-LEGACY-A2U',
+            metadata: metadata || {},
+            uid: uid
+        }, {
+            headers: {
+                'Authorization': `Key ${API_KEY}`,
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempotencyKey
+            }
+        });
+
+        const paymentId = createRes.data.identifier;
+        const txXdr = createRes.data.transaction?.to_sign;
+
+        const keypair = Keypair.fromSecret(WALLET_SEED);
+        const tx = new Transaction(txXdr, Networks.PUBLIC);
+        tx.sign(keypair);
+        const signedTxXdr = tx.toEnvelope().toXDR('base64');
+
+        const submitRes = await axios.post(
+            `${BASE}/payments/${paymentId}/submit`,
+            { txid: signedTxXdr },
+            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
+        );
+
+        await axios.post(
+            `${BASE}/payments/${paymentId}/complete`,
+            { txid: submitRes.data.txid },
+            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
+        );
+
         return res.status(200).json({
             success: true,
-            me_uid: meRes.data.uid,
-            request_uid: uid,
-            uid_match: meRes.data.uid === uid,
-            username: meRes.data.username
+            paymentId,
+            txid: submitRes.data.txid
         });
-        
+
     } catch (error) {
-        console.error("❌ ME gagal:", error.response?.status, error.response?.data);
-        return res.status(200).json({
-            success: false,
-            error: "User not found",
-            status: error.response?.status,
-            data: error.response?.data,
-            uid_sent: uid
+        return res.status(error.response?.status || 500).json({
+            error: error.response?.data?.error || error.message
         });
     }
 }

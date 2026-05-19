@@ -3,10 +3,14 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "dev": "vercel dev"
   },
   "dependencies": {
     "axios": "^1.6.0",
     "@stellar/stellar-sdk": "^13.2.0"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }

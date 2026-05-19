@@ -137,6 +137,8 @@ async function requestPayout() {
     }
     
     console.log("DEBUG [requestPayout] currentUser.uid:", currentUser.uid);
+    console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
+    
     await bersihkanSebelumBayar();
     updateStatus("Mencipta A2U...");
     
@@ -149,7 +151,12 @@ async function requestPayout() {
                 fetch("/api/bayar-keluar.js", { 
                     method: "POST", 
                     headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ paymentId: id, action: "approve" }) 
+                    body: JSON.stringify({ 
+                        paymentId: id, 
+                        action: "approve",
+                        uid: currentUser.uid,
+                        accessToken: currentUser.accessToken
+                    }) 
                 });
             },
             onReadyForServerCompletion: function(id, txid) {
@@ -157,7 +164,13 @@ async function requestPayout() {
                 fetch("/api/bayar-keluar.js", { 
                     method: "POST", 
                     headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ paymentId: id, txid: txid, action: "complete" }) 
+                    body: JSON.stringify({ 
+                        paymentId: id, 
+                        txid: txid, 
+                        action: "complete",
+                        uid: currentUser.uid,
+                        accessToken: currentUser.accessToken
+                    }) 
                 })
                 .then(function() { 
                     updateStatus("0.1 Pi dihantar!");
@@ -182,4 +195,4 @@ async function requestPayout() {
             }
         }
     );
-                                                                                                                                        }
+                      }

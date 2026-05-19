@@ -7,46 +7,55 @@ export default async function handler(req, res) {
     }
 
     const { uid, amount, accessToken, metadata } = req.body;
-    
-    // Tukar nama env var ni kat Vercel jadi PI_API_KEY je
     const API_KEY = process.env.PI_API_KEY;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    
-    const PI_API_CREATE = 'https://api.testnet.minepi.com/v2/payments/create';
-    const PI_API_PAYMENTS = 'https://api.testnet.minepi.com/v2/payments';
-
-    console.log("A2U Start - UID:", uid, "Amount:", amount);
+    const PI_API_BASE = 'https://api.testnet.minepi.com/v2';
 
     if (!API_KEY || !WALLET_SEED) {
-        console.error("Missing env vars. API_KEY:", !!API_KEY, "WALLET_SEED:", !!WALLET_SEED);
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    if (!uid || !amount || !accessToken) {
-        return res.status(400).json({ error: "Parameter uid, amount, accessToken diperlukan" });
-    }
-
-    // VALIDASI ACCESS TOKEN
+    // 1. Validate token
     try {
         const meRes = await axios.get('https://api.minepi.com/v2/me', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        if (!meRes.data?.uid) {
-            console.error("Invalid token response:", meRes.data);
-            return res.status(401).json({ error: "Invalid access token" });
+        if (meRes.data.uid !== uid) {
+            return res.status(401).json({ error: "UID tidak match dengan token" });
         }
-        console.log("Token valid for UID:", meRes.data.uid);
-    } catch (error) {
-        console.error("Token validation failed:", error.response?.data || error.message);
-        const status = error.response?.status || 500;
-        const msg = error.response?.data?.error || "Token validation failed";
-        return res.status(status).json({ error: msg });
+    } catch (e) {
+        return res.status(401).json({ error: "Token invalid" });
     }
 
+    // 2. Check payment pending sedia ada
     try {
-        // 1. CREATE PAYMENT
-        console.log("Creating payment...");
-        const createRes = await axios.post(PI_API_CREATE, {
+        const listRes = await axios.get(`${PI_API_BASE}/payments`, {
+            headers: { 'Authorization': `Key ${API_KEY}` },
+            params: { uid: uid, status: 'pending' }
+        });
+        
+        const pendingPayment = listRes.data.find(p => 
+            p.amount == amount && p.memo === 'MB-LEGACY-A2U'
+        );
+        
+        if (pendingPayment) {
+            console.log("Found pending payment:", pendingPayment.identifier);
+            // Terus cuba complete kalau ada txid
+            if (pendingPayment.txid) {
+                await completePayment(pendingPayment.identifier, pendingPayment.txid, API_KEY, PI_API_BASE);
+                return res.status(200).json({ success: true, paymentId: pendingPayment.identifier, txid: pendingPayment.txid });
+            }
+        }
+    } catch (e) {
+        console.log("Check pending failed:", e.message);
+    }
+
+    // 3. Create payment baru dengan idempotency key
+    const idempotencyKey = `${uid}-${amount}-${Date.now()}`;
+    let paymentId, txXdr;
+
+    try {
+        const createRes = await axios.post(`${PI_API_BASE}/payments`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
             metadata: metadata || {},
@@ -54,61 +63,55 @@ export default async function handler(req, res) {
         }, {
             headers: {
                 'Authorization': `Key ${API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempotencyKey
             }
         });
 
-        const paymentId = createRes.data.identifier;
-        const txXdr = createRes.data.transaction?.to_sign;
-        console.log("Payment created:", paymentId);
+        paymentId = createRes.data.identifier;
+        txXdr = createRes.data.transaction?.to_sign;
         
-        if (!txXdr) throw new Error('Transaction XDR missing dari Pi API');
+        if (!txXdr) throw new Error('Transaction XDR missing');
 
-        // 2. SIGN TRANSACTION
-        console.log("Signing transaction...");
+        // 4. Sign & submit
         const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
         const tx = new StellarSdk.Transaction(txXdr, StellarSdk.Networks.TESTNET);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
-        console.log("Transaction signed");
 
-        // 3. SUBMIT TRANSACTION
-        console.log("Submitting transaction...");
-        const submitRes = await axios.post(`${PI_API_PAYMENTS}/${paymentId}/submit`, 
+        const submitRes = await axios.post(`${PI_API_BASE}/payments/${paymentId}/submit`, 
             { txid: signedTxXdr }, 
-            {
-                headers: {
-                    'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+            { headers: { 'Authorization': `Key ${API_KEY}` } }
         );
 
         const txid = submitRes.data.txid;
-        console.log("Transaction submitted:", txid);
 
-        // 4. COMPLETE PAYMENT
-        console.log("Completing payment...");
-        await axios.post(`${PI_API_PAYMENTS}/${paymentId}/complete`, 
-            { txid }, 
-            {
-                headers: {
-                    'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        // 5. Complete dengan retry 3 kali
+        await completePayment(paymentId, txid, API_KEY, PI_API_BASE);
 
-        console.log("A2U Success:", paymentId, txid);
-        return res.status(200).json({ 
-            success: true, 
-            paymentId, 
-            txid 
-        });
+        return res.status(200).json({ success: true, paymentId, txid });
 
     } catch (error) {
         console.error("A2U Error:", error.response?.data || error.message);
-        const msg = error.response?.data?.error || error.message;
-        return res.status(500).json({ error: msg });
+        return res.status(500).json({ error: error.response?.data?.error || error.message });
+    }
+}
+
+async function completePayment(paymentId, txid, API_KEY, PI_API_BASE) {
+    let attempts = 0;
+    while (attempts < 3) {
+        try {
+            await axios.post(`${PI_API_BASE}/payments/${paymentId}/complete`, 
+                { txid }, 
+                { headers: { 'Authorization': `Key ${API_KEY}` } }
+            );
+            console.log("Complete success:", paymentId);
+            return;
+        } catch (e) {
+            attempts++;
+            console.log(`Complete attempt ${attempts} failed:`, e.message);
+            if (attempts === 3) throw e;
+            await new Promise(r => setTimeout(r, 1000)); // wait 1s sebelum retry
+        }
     }
 }

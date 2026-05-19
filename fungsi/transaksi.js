@@ -1,27 +1,66 @@
-// ========== PEMBERSIHAN AWAL ==========
+// ============================================
+// A2U PAYOUT FUNCTION - IKUT SOP RASMI PI
+// ============================================
+
+// Storage untuk tracking
+let pendingIncompleteCount = 0;
+
+/**
+ * Pembersihan incomplete payment
+ * WAJIB return object { status: "COMPLETED" | "CANCELLED" }
+ */
 async function onIncompletePaymentFound(payment) {
-    console.log("DEBUG [onIncompletePaymentFound] Payment ID:", payment.identifier);
-    updateStatus("Menyelesaikan pembayaran tertunda...");
+    console.log("🧹 [onIncompletePaymentFound] Payment:", payment.identifier);
+    
     pendingIncompleteCount++;
+    
     try {
-        let res = await fetch("/api/cuci.js", {
+        const res = await fetch("/api/bayar-keluar.js", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId: payment.identifier })
+            body: JSON.stringify({
+                action: "cancel",
+                paymentId: payment.identifier
+            })
         });
-        let data = await res.json();
-        console.log("DEBUG [onIncompletePaymentFound] Response:", data);
+        
+        const data = await res.json();
+        console.log("🧹 [onIncompletePaymentFound] Result:", data);
+        
         pendingIncompleteCount--;
+        
         if (data.success) {
-            updateStatus("Selesai");
+            updateStatus("Bersedia untuk pembayaran");
             tryEnablePaymentButtons();
-            return { status: "COMPLETED" };
+            return { status: "CANCELLED" };
         }
+        
+        // Kalau gagal cancel, cuba complete jika ada txid
+        if (payment.transaction?.txid) {
+            const completeRes = await fetch("/api/bayar-keluar.js", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "complete",
+                    paymentId: payment.identifier,
+                    txid: payment.transaction.txid,
+                    accessToken: currentUser?.accessToken
+                })
+            });
+            
+            if (completeRes.ok) {
+                updateStatus("Bersedia");
+                tryEnablePaymentButtons();
+                return { status: "COMPLETED" };
+            }
+        }
+        
         updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
+        
     } catch (e) {
-        console.error("DEBUG [onIncompletePaymentFound] Error:", e.message);
+        console.error("❌ [onIncompletePaymentFound] Error:", e.message);
         pendingIncompleteCount--;
         updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
@@ -29,170 +68,206 @@ async function onIncompletePaymentFound(payment) {
     }
 }
 
-async function bersihkanSebelumBayar() {
-    console.log("DEBUG [bersihkanSebelumBayar] Started");
-    try {
-        const payments = await Pi.getIncompletePayments();
-        console.log("DEBUG [bersihkanSebelumBayar] Incomplete payments count:", payments ? payments.length : 0);
-        if (payments && payments.length > 0) {
-            updateStatus("Membersihkan transaksi terdahulu...");
-            for (let p of payments) {
-                console.log("DEBUG [bersihkanSebelumBayar] Cleaning payment:", p.identifier);
-                await fetch("/api/cuci.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: p.identifier })
-                });
-            }
-            updateStatus("Sedia untuk pembayaran baru.");
-        }
-    } catch (e) {
-        console.error("DEBUG [bersihkanSebelumBayar] Error:", e.message);
-    }
-}
-
-// ========== U2A: BELI PRODUK ==========
-async function buyProduct(key, amount) {
-    console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
-    if (!currentUser) { 
-        updateStatus("Sila login dahulu.");
-        console.log("DEBUG [buyProduct] No currentUser");
-        return; 
-    }
-    
-    if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
-        console.log("DEBUG [buyProduct] Echelon already purchased, showing report");
-        showEchelonReport();
-        return;
-    }
-    if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
-        console.log("DEBUG [buyProduct] Command already purchased, showing content");
-        showLockedContent('command');
-        return;
-    }
-    
-    // ❌ await bersihkanSebelumBayar(); ← TELAH DIBUANG
-    
-    let total = parseFloat(amount).toFixed(7);
-    updateStatus("Membayar " + total + " Pi...");
-    console.log("DEBUG [buyProduct] Creating payment for", total, "Pi");
-    
-    Pi.createPayment(
-        { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
-        {
-            onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                console.log("DEBUG [buyProduct] onReadyForServerApproval - paymentId:", id);
-                fetch("/api/bayar-sah.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id })
-                });
-            },
-            onReadyForServerCompletion: function(id, txid) {
-                console.log("DEBUG [buyProduct] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
-                fetch("/api/bayar-selesai.js", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId: id, txid: txid })
-                }).then(function() {
-                    updateStatus("Berjaya!");
-                    console.log("DEBUG [buyProduct] Payment completed successfully");
-                    
-                    if (key === "echelon") {
-                        localStorage.setItem('mb-legacy-bought-echelon', 'true');
-                        currentUser.boughtEchelon = true;
-                        showEchelonReport();
-                    }
-                    if (key === "command") {
-                        localStorage.setItem('mb-legacy-bought-command', 'true');
-                        currentUser.boughtCommand = true;
-                        showLockedContent("command");
-                    }
-                }).catch(async function() {
-                    console.error("DEBUG [buyProduct] Completion failed, cleaning up");
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
-                });
-            },
-            onCancel: function() { 
-                console.log("DEBUG [buyProduct] Payment cancelled");
-                updateStatus("Dibatalkan"); 
-            },
-            onError: function(e) { 
-                console.error("DEBUG [buyProduct] Payment error:", e.message);
-                updateStatus("Ralat: " + e.message); 
-            }
-        }
-    );
-}
-
-// ========== A2U: CLAIM REWARD ==========
+/**
+ * Fungsi utama A2U Payout
+ * IKUT SOP RASMI PI NETWORK
+ */
 async function requestPayout() {
-    console.log("DEBUG [requestPayout] Called");
-    if (!currentUser) { 
-        updateStatus("Sila login dahulu.");
-        console.log("DEBUG [requestPayout] No currentUser");
-        return; 
+    console.log("🚀 [requestPayout] Memulakan A2U payout");
+    
+    // ✅ WAJIB: Semak user login
+    if (!currentUser) {
+        updateStatus("❌ Sila login dahulu");
+        console.error("❌ [requestPayout] Tiada currentUser");
+        return;
     }
     
-    console.log("DEBUG [requestPayout] currentUser.uid:", currentUser.uid);
-    console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
+    // ✅ WAJIB: Semak access token
+    if (!currentUser.accessToken) {
+        updateStatus("❌ Access token tiada. Sila login semula");
+        console.error("❌ [requestPayout] Tiada accessToken");
+        return;
+    }
     
-    await bersihkanSebelumBayar();
-    updateStatus("Mencipta A2U...");
+    console.log("👤 User UID:", currentUser.uid);
+    console.log("🔑 Access Token:", currentUser.accessToken.substring(0, 10) + "...");
     
+    updateStatus("⏳ Mencipta pembayaran A2U...");
+    
+    // ✅ WAJIB: Guna Pi.createPayment dengan SEMUA callback
     Pi.createPayment(
-        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
         {
+            // Data pembayaran
+            amount: 0.1,
+            memo: "MB-Legacy Reward Payout",
+            metadata: {
+                type: "payout",
+                source: "claim_reward",
+                timestamp: Date.now()
+            },
+            // A2U memerlukan uid
+            uid: currentUser.uid
+        },
+        {
+            // ============================================
+            // CALLBACK 1: onIncompletePaymentFound
+            // WAJIB return { status: "COMPLETED" | "CANCELLED" }
+            // ============================================
             onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                console.log("DEBUG [requestPayout] onReadyForServerApproval - paymentId:", id);
-                fetch("/api/bayar-keluar.js", { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ 
-                        paymentId: id, 
-                        action: "approve",
-                        uid: currentUser.uid,
-                        accessToken: currentUser.accessToken
-                    }) 
+            
+            // ============================================
+            // CALLBACK 2: onReadyForServerApproval
+            // WAJIB return Promise yang resolve
+            // ============================================
+            onReadyForServerApproval: function(paymentId) {
+                console.log("✅ [onReadyForServerApproval] Payment ID:", paymentId);
+                
+                // ✅ WAJIB: Return Promise
+                return new Promise((resolve, reject) => {
+                    fetch("/api/bayar-keluar.js", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "approve",
+                            paymentId: paymentId,
+                            accessToken: currentUser.accessToken,
+                            uid: currentUser.uid
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("✅ Approval response:", data);
+                        
+                        if (data.success) {
+                            updateStatus("✅ Pembayaran diluluskan");
+                            resolve(data);
+                        } else {
+                            console.error("❌ Approval gagal:", data.error);
+                            updateStatus("❌ Gagal meluluskan pembayaran");
+                            reject(new Error(data.error || "Approval failed"));
+                        }
+                    })
+                    .catch(err => {
+                        console.error("❌ Approval network error:", err);
+                        updateStatus("❌ Ralat rangkaian semasa approval");
+                        reject(err);
+                    });
                 });
             },
-            onReadyForServerCompletion: function(id, txid) {
-                console.log("DEBUG [requestPayout] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
-                fetch("/api/bayar-keluar.js", { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ 
-                        paymentId: id, 
-                        txid: txid, 
-                        action: "complete",
-                        uid: currentUser.uid,
-                        accessToken: currentUser.accessToken
-                    }) 
-                })
-                .then(function() { 
-                    updateStatus("0.1 Pi dihantar!");
-                    console.log("DEBUG [requestPayout] A2U completed successfully");
-                    if (typeof showSuccessPopup === 'function') {
-                        showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
-                    }
-                })
-                .catch(async function() {
-                    console.error("DEBUG [requestPayout] Completion failed, cleaning up");
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
+            
+            // ============================================
+            // CALLBACK 3: onReadyForServerCompletion
+            // WAJIB return Promise yang resolve
+            // ============================================
+            onReadyForServerCompletion: function(paymentId, txid) {
+                console.log("✅ [onReadyForServerCompletion] Payment:", paymentId, "TxID:", txid);
+                
+                // ✅ WAJIB: Return Promise
+                return new Promise((resolve, reject) => {
+                    fetch("/api/bayar-keluar.js", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "complete",
+                            paymentId: paymentId,
+                            txid: txid,
+                            accessToken: currentUser.accessToken,
+                            uid: currentUser.uid
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("✅ Completion response:", data);
+                        
+                        if (data.success) {
+                            updateStatus("🎉 0.1 Pi berjaya dihantar!");
+                            
+                            // Callback optional untuk UI
+                            if (typeof showSuccessPopup === 'function') {
+                                showSuccessPopup(
+                                    "✅ REWARD RECEIVED!",
+                                    "0.1 Test-Pi telah dihantar ke wallet anda.",
+                                    "OK"
+                                );
+                            }
+                            
+                            resolve(data);
+                        } else {
+                            console.error("❌ Completion gagal:", data.error);
+                            updateStatus("❌ Gagal menyelesaikan pembayaran");
+                            reject(new Error(data.error || "Completion failed"));
+                        }
+                    })
+                    .catch(err => {
+                        console.error("❌ Completion network error:", err);
+                        updateStatus("❌ Ralat rangkaian semasa completion");
+                        reject(err);
+                    });
                 });
             },
-            onCancel: function() { 
-                console.log("DEBUG [requestPayout] Payment cancelled");
-                updateStatus("Dibatalkan"); 
+            
+            // ============================================
+            // CALLBACK 4: onCancel
+            // ============================================
+            onCancel: function(paymentId) {
+                console.log("🚫 [onCancel] Payment dibatalkan:", paymentId);
+                updateStatus("🚫 Pembayaran dibatalkan");
+                
+                // Cleanup di server
+                fetch("/api/bayar-keluar.js", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "cancel",
+                        paymentId: paymentId
+                    })
+                }).catch(e => console.error("Cleanup error:", e));
             },
-            onError: function(e) { 
-                console.error("DEBUG [requestPayout] Payment error:", e.message);
-                updateStatus("Ralat: " + e.message); 
+            
+            // ============================================
+            // CALLBACK 5: onError
+            // ============================================
+            onError: function(error, payment) {
+                console.error("❌ [onError] Payment error:", error);
+                console.error("❌ Payment details:", payment);
+                
+                updateStatus("❌ Ralat: " + (error.message || "Unknown error"));
+                
+                // Kalau payment wujud, cleanup
+                if (payment?.identifier) {
+                    fetch("/api/bayar-keluar.js", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "cancel",
+                            paymentId: payment.identifier
+                        })
+                    }).catch(e => console.error("Cleanup error:", e));
+                }
             }
         }
     );
 }
+
+// ============================================
+// HELPER FUNCTIONS (sesuaikan dengan UI anda)
+// ============================================
+function updateStatus(message) {
+    console.log("📢 Status:", message);
+    
+    // Update UI element jika wujud
+    const statusEl = document.getElementById('payout-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
+    }
+}
+
+function tryEnablePaymentButtons() {
+    // Enable balik button payout jika ada
+    const payoutBtn = document.getElementById('payout-button');
+    if (payoutBtn && pendingIncompleteCount <= 0) {
+        payoutBtn.disabled = false;
+        payoutBtn.style.opacity = '1';
+    }
+                          }

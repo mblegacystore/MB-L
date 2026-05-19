@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as StellarSdk from 'stellar-sdk';
 
-// Storage sementara (ganti dengan database untuk production)
+// Storage untuk elak double payment
 const paymentStore = {};
 
 export default async function handler(req, res) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================
-    // 2. COMPLETE (A2U step akhir)
+    // 2. COMPLETE (untuk selesaikan payment tergendala)
     // ============================================
     if (action === 'complete' && paymentId && txid) {
         try {
@@ -55,12 +55,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Data tak lengkap" });
     }
 
+    // ✅ BEARER VALIDATION (WAJIB)
     if (!accessToken) {
         return res.status(400).json({ error: "Access token missing" });
     }
 
     try {
-        // ========== VALIDASI BEARER TOKEN ==========
+        // ✅ VALIDASI BEARER TOKEN
         const meRes = await axios.get('https://api.minepi.com/v2/me', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: "Invalid access token" });
         }
 
-        // ========== CEK INCOMPLETE PAYMENTS (SOP) ==========
+        // ✅ CEK INCOMPLETE PAYMENTS (elak sequence lock)
         const searchRes = await axios.get(`${PI_API_BASE}?uid=${uid}&direction=app_to_user`, {
             headers: { 'Authorization': `Key ${API_KEY}` }
         });
@@ -87,20 +88,20 @@ export default async function handler(req, res) {
             }
         }
 
-        // ========== CREATE PAYMENT ==========
+        // CREATE PAYMENT
         const createResponse = await axios.post(
             PI_API_BASE,
             {
-                amount,
+                amount: amount,
                 memo: 'MB-LEGACY-A2U',
                 metadata: metadata || { source: 'claim_reward', timestamp: Date.now() },
-                uid
+                uid: uid,
             },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
             }
         );
 
@@ -111,30 +112,30 @@ export default async function handler(req, res) {
             throw new Error('Transaction XDR missing from creation response.');
         }
 
-        // ========== SIMPAN paymentId (elak double payment) ==========
+        // ✅ SIMPAN paymentId (elak double payment)
         paymentStore[paymentId] = {
-            uid,
-            amount,
+            uid: uid,
+            amount: amount,
             status: 'created',
             createdAt: Date.now()
         };
 
-        // ========== SIGN TRANSACTION (Stellar SDK) ==========
+        // SIGN TRANSACTION (Stellar SDK)
         const networkPassphrase = StellarSdk.Networks.TESTNET;
         const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
         const transaction = new StellarSdk.Transaction(txXdr, networkPassphrase);
         transaction.sign(keypair);
         const signedTxXdr = transaction.toEnvelope().toXDR('base64');
 
-        // ========== SUBMIT PAYMENT ==========
+        // SUBMIT PAYMENT
         const submitResponse = await axios.post(
             `${PI_API_BASE}/${paymentId}/submit`,
             { txid: signedTxXdr },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
             }
         );
 
@@ -142,15 +143,15 @@ export default async function handler(req, res) {
         paymentStore[paymentId].txid = txid;
         paymentStore[paymentId].status = 'submitted';
 
-        // ========== COMPLETE PAYMENT ==========
+        // COMPLETE PAYMENT
         await axios.post(
             `${PI_API_BASE}/${paymentId}/complete`,
-            { txid },
+            { txid: txid },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
             }
         );
 
@@ -159,8 +160,8 @@ export default async function handler(req, res) {
         return res.status(200).json({
             success: true,
             message: "0.1 Test-Pi berjaya dihantar!",
-            paymentId,
-            txid
+            paymentId: paymentId,
+            txid: txid
         });
 
     } catch (error) {

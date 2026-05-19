@@ -19,156 +19,332 @@ export default async function handler(req, res) {
     }
 
     // ============================================
-    // 1. CLEAN (untuk expired/pending)
+    // VALIDASI ACCESS TOKEN (WAJIB UNTUK A2U)
     // ============================================
-    if (action === 'clean' && paymentId) {
+    async function validateAccessToken(token) {
+        if (!token) {
+            throw new Error("Access token missing");
+        }
         try {
-            await axios.post(`${PI_API_BASE}/${paymentId}/cancel`, {}, {
-                headers: { 'Authorization': `Key ${API_KEY}` }
+            const meRes = await axios.get('https://api.minepi.com/v2/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            delete paymentStore[paymentId];
-            return res.status(200).json({ success: true });
+            if (!meRes.data?.uid) {
+                throw new Error("Invalid access token");
+            }
+            return meRes.data.uid;
         } catch (error) {
-            return res.status(500).json({ error: error.message });
+            if (error.response?.status === 401) {
+                throw new Error("Access token tidak sah atau telah tamat tempoh");
+            }
+            throw new Error("Gagal mengesahkan access token: " + error.message);
         }
     }
 
     // ============================================
-    // 2. COMPLETE (untuk selesaikan payment tergendala)
+    // 1. APPROVE - onReadyForServerApproval callback
+    // ============================================
+    if (action === 'approve' && paymentId) {
+        try {
+            // ✅ WAJIB: Validate access token
+            const validatedUid = await validateAccessToken(accessToken);
+
+            // ✅ WAJIB: Dapatkan payment details untuk disemak
+            const paymentRes = await axios.get(`${PI_API_BASE}/${paymentId}`, {
+                headers: { 'Authorization': `Key ${API_KEY}` }
+            });
+
+            const payment = paymentRes.data;
+
+            // ✅ WAJIB: Sahkan payment milik user yang betul
+            if (payment.uid !== validatedUid) {
+                return res.status(403).json({ 
+                    error: "Payment bukan milik user ini",
+                    payment_uid: payment.uid,
+                    token_uid: validatedUid
+                });
+            }
+
+            // ✅ WAJIB: Sahkan payment belum di-approve
+            if (payment.status?.developer_approved) {
+                return res.status(200).json({ 
+                    message: "Payment sudah di-approve",
+                    payment: payment 
+                });
+            }
+
+            // ✅ APPROVE payment
+            const approveRes = await axios.post(
+                `${PI_API_BASE}/${paymentId}/approve`,
+                {},
+                {
+                    headers: {
+                        'Authorization': `Key ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Simpan dalam paymentStore
+            paymentStore[paymentId] = {
+                uid: validatedUid,
+                amount: payment.amount,
+                status: 'approved',
+                createdAt: Date.now()
+            };
+
+            console.log(`✅ Payment ${paymentId} approved untuk user ${validatedUid}`);
+
+            return res.status(200).json({
+                success: true,
+                message: "Payment berjaya di-approve",
+                payment: approveRes.data
+            });
+
+        } catch (error) {
+            console.error("Approve Error:", error.response?.data || error.message);
+            return res.status(500).json({
+                success: false,
+                error: error.response?.data?.error || error.message
+            });
+        }
+    }
+
+    // ============================================
+    // 2. COMPLETE - onReadyForServerCompletion callback
     // ============================================
     if (action === 'complete' && paymentId && txid) {
         try {
-            await axios.post(`${PI_API_BASE}/${paymentId}/complete`, { txid }, {
-                headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' }
+            // ✅ WAJIB: Validate access token
+            const validatedUid = await validateAccessToken(accessToken);
+
+            // ✅ WAJIB: Dapatkan payment details
+            const paymentRes = await axios.get(`${PI_API_BASE}/${paymentId}`, {
+                headers: { 'Authorization': `Key ${API_KEY}` }
             });
-            paymentStore[paymentId].status = 'completed';
-            return res.status(200).json({ success: true });
+
+            const payment = paymentRes.data;
+
+            // ✅ WAJIB: Sahkan payment milik user
+            if (payment.uid !== validatedUid) {
+                return res.status(403).json({ 
+                    error: "Payment bukan milik user ini" 
+                });
+            }
+
+            // ✅ WAJIB: Sahkan payment belum completed
+            if (payment.status?.developer_completed) {
+                return res.status(200).json({ 
+                    message: "Payment sudah completed",
+                    txid: payment.transaction?.txid
+                });
+            }
+
+            // ✅ COMPLETE payment
+            const completeRes = await axios.post(
+                `${PI_API_BASE}/${paymentId}/complete`,
+                { txid: txid },
+                {
+                    headers: {
+                        'Authorization': `Key ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Update paymentStore
+            if (paymentStore[paymentId]) {
+                paymentStore[paymentId].status = 'completed';
+                paymentStore[paymentId].txid = txid;
+            }
+
+            console.log(`✅ Payment ${paymentId} completed. TxID: ${txid}`);
+
+            return res.status(200).json({
+                success: true,
+                message: "Payment berjaya diselesaikan",
+                txid: txid,
+                payment: completeRes.data
+            });
+
         } catch (error) {
-            return res.status(500).json({ error: error.message });
+            console.error("Complete Error:", error.response?.data || error.message);
+            return res.status(500).json({
+                success: false,
+                error: error.response?.data?.error || error.message
+            });
         }
     }
 
     // ============================================
-    // 3. A2U: CREATE → SIGN → SUBMIT → COMPLETE
+    // 3. CANCEL / CLEAN - Untuk pembersihan
     // ============================================
-    if (!uid || !amount) {
-        return res.status(400).json({ error: "Data tak lengkap" });
+    if (action === 'cancel' && paymentId) {
+        try {
+            await axios.post(
+                `${PI_API_BASE}/${paymentId}/cancel`,
+                {},
+                {
+                    headers: { 'Authorization': `Key ${API_KEY}` }
+                }
+            );
+
+            delete paymentStore[paymentId];
+            console.log(`🧹 Payment ${paymentId} dibatalkan`);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: "Payment dibatalkan" 
+            });
+
+        } catch (error) {
+            console.error("Cancel Error:", error.response?.data || error.message);
+            return res.status(500).json({ 
+                success: false, 
+                error: error.message 
+            });
+        }
     }
 
-    // ✅ BEARER VALIDATION (WAJIB)
-    if (!accessToken) {
-        return res.status(400).json({ error: "Access token missing" });
+    // ============================================
+    // 4. CREATE A2U - Flow penuh (FALLBACK)
+    // ============================================
+    // Ini hanya backup kalau client perlu server create payment
+    if (!uid || !amount) {
+        return res.status(400).json({ 
+            error: "Data tidak lengkap. uid dan amount diperlukan untuk create A2U" 
+        });
     }
 
     try {
-        // ✅ VALIDASI BEARER TOKEN
-        const meRes = await axios.get('https://api.minepi.com/v2/me', {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        if (!meRes.data?.uid) {
-            return res.status(401).json({ error: "Invalid access token" });
+        // ✅ WAJIB: Validate access token
+        const validatedUid = await validateAccessToken(accessToken);
+
+        // ✅ WAJIB: Pastikan uid dalam request sama dengan token
+        if (validatedUid !== uid) {
+            return res.status(403).json({
+                error: "UID tidak sepadan dengan access token"
+            });
         }
 
-        // ✅ CEK INCOMPLETE PAYMENTS (elak sequence lock)
-        const searchRes = await axios.get(`${PI_API_BASE}?uid=${uid}&direction=app_to_user`, {
-            headers: { 'Authorization': `Key ${API_KEY}` }
-        });
-        const incompletePayments = searchRes.data.payments || [];
+        // ✅ WAJIB: Cek incomplete payments dan selesaikan
+        const searchRes = await axios.get(
+            `${PI_API_BASE}?uid=${uid}&direction=app_to_user`,
+            { headers: { 'Authorization': `Key ${API_KEY}` } }
+        );
+
+        const incompletePayments = (searchRes.data.payments || []).filter(
+            p => !p.status?.developer_completed && !p.status?.cancelled
+        );
 
         for (const p of incompletePayments) {
-            if (p.status?.developer_completed || p.status?.cancelled) continue;
-            if (p.transaction?.txid) {
-                await axios.post(`${PI_API_BASE}/${p.identifier}/complete`, { txid: p.transaction.txid }, {
-                    headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' }
-                });
-            } else {
-                await axios.post(`${PI_API_BASE}/${p.identifier}/cancel`, {}, {
-                    headers: { 'Authorization': `Key ${API_KEY}` }
-                });
+            try {
+                if (p.transaction?.txid) {
+                    await axios.post(
+                        `${PI_API_BASE}/${p.identifier}/complete`,
+                        { txid: p.transaction.txid },
+                        { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
+                    );
+                    console.log(`✅ Completed pending payment: ${p.identifier}`);
+                } else {
+                    await axios.post(
+                        `${PI_API_BASE}/${p.identifier}/cancel`,
+                        {},
+                        { headers: { 'Authorization': `Key ${API_KEY}` } }
+                    );
+                    console.log(`🧹 Cancelled pending payment: ${p.identifier}`);
+                }
+            } catch (err) {
+                console.error(`Gagal proses payment ${p.identifier}:`, err.message);
             }
         }
 
-        // CREATE PAYMENT
+        // ✅ CREATE payment
         const createResponse = await axios.post(
             PI_API_BASE,
             {
                 amount: amount,
                 memo: 'MB-LEGACY-A2U',
-                metadata: metadata || { source: 'claim_reward', timestamp: Date.now() },
-                uid: uid,
+                metadata: metadata || { 
+                    source: 'claim_reward', 
+                    timestamp: Date.now() 
+                },
+                uid: uid
             },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
+                    'Content-Type': 'application/json'
+                }
             }
         );
 
-        const paymentId = createResponse.data.identifier;
+        const newPaymentId = createResponse.data.identifier;
         const txXdr = createResponse.data.transaction?.to_sign;
 
         if (!txXdr) {
-            throw new Error('Transaction XDR missing from creation response.');
+            throw new Error('Transaction XDR missing dari response create');
         }
 
-        // ✅ SIMPAN paymentId (elak double payment)
-        paymentStore[paymentId] = {
+        // Simpan dalam paymentStore
+        paymentStore[newPaymentId] = {
             uid: uid,
             amount: amount,
             status: 'created',
             createdAt: Date.now()
         };
 
-        // SIGN TRANSACTION (Stellar SDK)
+        // ✅ SIGN transaction
         const networkPassphrase = StellarSdk.Networks.TESTNET;
         const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
         const transaction = new StellarSdk.Transaction(txXdr, networkPassphrase);
         transaction.sign(keypair);
         const signedTxXdr = transaction.toEnvelope().toXDR('base64');
 
-        // SUBMIT PAYMENT
+        // ✅ SUBMIT payment
         const submitResponse = await axios.post(
-            `${PI_API_BASE}/${paymentId}/submit`,
+            `${PI_API_BASE}/${newPaymentId}/submit`,
             { txid: signedTxXdr },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
+                    'Content-Type': 'application/json'
+                }
             }
         );
 
-        const txid = submitResponse.data.txid;
-        paymentStore[paymentId].txid = txid;
-        paymentStore[paymentId].status = 'submitted';
+        const submitTxid = submitResponse.data.txid;
+        paymentStore[newPaymentId].txid = submitTxid;
+        paymentStore[newPaymentId].status = 'submitted';
 
-        // COMPLETE PAYMENT
+        // ✅ COMPLETE payment
         await axios.post(
-            `${PI_API_BASE}/${paymentId}/complete`,
-            { txid: txid },
+            `${PI_API_BASE}/${newPaymentId}/complete`,
+            { txid: submitTxid },
             {
                 headers: {
                     'Authorization': `Key ${API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
+                    'Content-Type': 'application/json'
+                }
             }
         );
 
-        paymentStore[paymentId].status = 'completed';
+        paymentStore[newPaymentId].status = 'completed';
+
+        console.log(`✅ A2U Payment berjaya: ${newPaymentId} | TxID: ${submitTxid}`);
 
         return res.status(200).json({
             success: true,
             message: "0.1 Test-Pi berjaya dihantar!",
-            paymentId: paymentId,
-            txid: txid
+            paymentId: newPaymentId,
+            txid: submitTxid
         });
 
     } catch (error) {
-        console.error("A2U Error:", error.response?.data || error.message);
+        console.error("A2U Create Error:", error.response?.data || error.message);
         return res.status(500).json({
             success: false,
             error: error.response?.data?.error || error.message
         });
     }
-}
+                }

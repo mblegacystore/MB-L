@@ -1,9 +1,6 @@
 import axios from 'axios';
 import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
-// Simpanan sementara (guna database sebenar untuk production)
-const paymentStore = new Map();
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Kaedah Tidak Dibenarkan' });
@@ -12,17 +9,15 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    
-    const ME_URL = 'https://api.minepi.com/v2';
-    const PAY_URL = 'https://api.testnet.minepi.com';
+    const BASE = 'https://api.minepi.com/v2';
 
     if (!uid || !amount || !accessToken) {
         return res.status(400).json({ error: "Parameter diperlukan" });
     }
 
-    // 1. SAHKAN TOKEN
+    // 1. SAHKAN TOKEN (SOP)
     try {
-        const meRes = await axios.get(`${ME_URL}/me`, {
+        const meRes = await axios.get(`${BASE}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!meRes.data?.uid || meRes.data.uid !== uid) {
@@ -37,7 +32,7 @@ export default async function handler(req, res) {
     try {
         const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
         
-        const createRes = await axios.post(`${PAY_URL}/payments`, {
+        const createRes = await axios.post(`${BASE}/payments`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
             metadata: metadata || {},
@@ -55,58 +50,30 @@ export default async function handler(req, res) {
 
         if (!txXdr) throw new Error('XDR missing');
 
-        // 3. SIMPAN PAYMENT ID (SOP - KRITIKAL)
-        paymentStore.set(paymentId, {
-            uid: uid,
-            amount: parseFloat(amount),
-            memo: 'MB-LEGACY-A2U',
-            metadata: metadata || {},
-            paymentId: paymentId,
-            txid: null,
-            status: 'created',
-            createdAt: new Date().toISOString()
-        });
-        console.log("💾 Disimpan:", paymentId);
-
-        // 4. SIGN
+        // 3. SIGN - STELLAR SDK
         const keypair = Keypair.fromSecret(WALLET_SEED);
-        const tx = new Transaction(txXdr, Networks.TESTNET);
+        const tx = new Transaction(txXdr, Networks.PUBLIC);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
 
-        // 5. SUBMIT
+        // 4. SUBMIT
         const submitRes = await axios.post(
-            `${PAY_URL}/payments/${paymentId}/submit`,
+            `${BASE}/payments/${paymentId}/submit`,
             { txid: signedTxXdr },
             { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
         );
 
-        const txid = submitRes.data.txid;
-
-        // 6. KEMASKINI STORAGE (SOP - DISYORKAN)
-        const payment = paymentStore.get(paymentId);
-        payment.txid = txid;
-        payment.status = 'submitted';
-        paymentStore.set(paymentId, payment);
-        console.log("💾 Dikemaskini:", paymentId, txid);
-
-        // 7. COMPLETE
+        // 5. COMPLETE
         await axios.post(
-            `${PAY_URL}/payments/${paymentId}/complete`,
-            { txid },
+            `${BASE}/payments/${paymentId}/complete`,
+            { txid: submitRes.data.txid },
             { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
         );
-
-        // 8. KEMASKINI STATUS
-        payment.status = 'completed';
-        payment.completedAt = new Date().toISOString();
-        paymentStore.set(paymentId, payment);
-        console.log("💾 Selesai:", paymentId);
 
         return res.status(200).json({
             success: true,
             paymentId,
-            txid
+            txid: submitRes.data.txid
         });
 
     } catch (error) {

@@ -51,7 +51,7 @@ async function bersihkanSebelumBayar() {
     }
 }
 
-// ========== U2A: BELI PRODUK ==========
+// ========== U2A: BELI PRODUK (STABIL – JANGAN UBAH) ==========
 async function buyProduct(key, amount) {
     console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
     if (!currentUser) { 
@@ -70,8 +70,6 @@ async function buyProduct(key, amount) {
         showLockedContent('command');
         return;
     }
-    
-    // ❌ await bersihkanSebelumBayar(); ← TELAH DIBUANG
     
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
@@ -127,7 +125,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD ==========
+// ========== A2U: CLAIM REWARD (BETUL) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
@@ -136,14 +134,13 @@ async function requestPayout() {
         return; 
     }
     
-    console.log("DEBUG [requestPayout] currentUser.uid:", currentUser.uid);
+    console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
     
-    await bersihkanSebelumBayar();
     updateStatus("Mencipta A2U...");
     
     Pi.createPayment(
-        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout" } },
+        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout", source: "MB Legacy Store" } },
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
@@ -195,4 +192,4 @@ async function requestPayout() {
             }
         }
     );
-}
+                            }

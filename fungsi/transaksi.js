@@ -125,7 +125,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (BETUL) ==========
+// ========== A2U: CLAIM REWARD (BETUL – TIADA Pi.createPayment) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
@@ -137,59 +137,33 @@ async function requestPayout() {
     console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
     
-    updateStatus("Mencipta A2U...");
+    updateStatus("Memproses ganjaran...");
     
-    Pi.createPayment(
-        { uid: currentUser.uid, amount: 0.1, memo: "Payout", metadata: { type: "payout", source: "MB Legacy Store" } },
-        {
-            onIncompletePaymentFound: onIncompletePaymentFound,
-            onReadyForServerApproval: function(id) {
-                console.log("DEBUG [requestPayout] onReadyForServerApproval - paymentId:", id);
-                fetch("/api/bayar-keluar.js", { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ 
-                        paymentId: id, 
-                        action: "approve",
-                        uid: currentUser.uid,
-                        accessToken: currentUser.accessToken
-                    }) 
-                });
-            },
-            onReadyForServerCompletion: function(id, txid) {
-                console.log("DEBUG [requestPayout] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
-                fetch("/api/bayar-keluar.js", { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ 
-                        paymentId: id, 
-                        txid: txid, 
-                        action: "complete",
-                        uid: currentUser.uid,
-                        accessToken: currentUser.accessToken
-                    }) 
-                })
-                .then(function() { 
-                    updateStatus("0.1 Pi dihantar!");
-                    console.log("DEBUG [requestPayout] A2U completed successfully");
-                    if (typeof showSuccessPopup === 'function') {
-                        showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
-                    }
-                })
-                .catch(async function() {
-                    console.error("DEBUG [requestPayout] Completion failed, cleaning up");
-                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
-                    updateStatus("Pulih!");
-                });
-            },
-            onCancel: function() { 
-                console.log("DEBUG [requestPayout] Payment cancelled");
-                updateStatus("Dibatalkan"); 
-            },
-            onError: function(e) { 
-                console.error("DEBUG [requestPayout] Payment error:", e.message);
-                updateStatus("Ralat: " + e.message); 
+    try {
+        const response = await fetch("/api/bayar-keluar.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                uid: currentUser.uid,
+                amount: 0.1,
+                accessToken: currentUser.accessToken,
+                metadata: { source: "claim_reward", timestamp: Date.now() }
+            })
+        });
+        
+        const result = await response.json();
+        console.log("DEBUG [requestPayout] Response:", result);
+        
+        if (result.success) {
+            updateStatus("0.1 Pi dihantar!");
+            if (typeof showSuccessPopup === 'function') {
+                showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
             }
+        } else {
+            updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
-    );
-                            }
+    } catch (error) {
+        console.error("DEBUG [requestPayout] Error:", error);
+        updateStatus("Rangkaian error. Sila cuba lagi.");
+    }
+}

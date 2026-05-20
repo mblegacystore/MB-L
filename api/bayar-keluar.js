@@ -1,10 +1,11 @@
-import pkg from 'pi-backend';
-console.log("DEBUG pi-backend import:", Object.keys(pkg));
+import PiNetwork from 'pi-backend';
 
-// Storage ringkas (GANTI DENGAN DATABASE SEBENAR untuk produksi)
+// ========== STORAGE (LANGKAH 3 & 5 SOP) ==========
 const paymentStore = new Map();
 
 export default async function handler(req, res) {
+    console.log("\n==================== A2U 6-STEP SOP ====================");
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -13,6 +14,9 @@ export default async function handler(req, res) {
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
 
+    console.log("1. Input check - uid:", uid, "amount:", amount);
+    console.log("2. Config check - API_KEY:", !!API_KEY, "SEED:", !!WALLET_SEED);
+
     if (!uid || !amount) {
         return res.status(400).json({ error: 'Missing uid or amount' });
     }
@@ -20,82 +24,88 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server config error' });
     }
 
-    // 🔒 LANGKAH KESELAMATAN: Semak pembayaran "pending" sedia ada untuk pengguna ini
+    // ========== SEMAK PEMBAYARAN TERTUNDA ==========
+    console.log("\n--- Checking pending payments ---");
     for (const [id, payment] of paymentStore.entries()) {
         if (payment.uid === uid && payment.status !== 'COMPLETED' && payment.status !== 'CANCELLED') {
-            console.log(`⚠️ Pembayaran belum selesai ditemui: ${id}. Menyambung semula...`);
+            console.log(`Found pending: ${id} (${payment.status})`);
             
-            // Jika ada, kita sambung semula, bukan cipta baru
             try {
                 const pi = new PiNetwork(API_KEY, WALLET_SEED);
                 
-                if (payment.status === 'CREATED' && !payment.txid) {
-                    // Langkah 4: Submit ke blockchain
-                    const txid = await pi.submitPayment(id);
-                    paymentStore.set(id, { ...payment, txid, status: 'SUBMITTED' });
-                    
-                    // Langkah 6: Complete
-                    await pi.completePayment(id, txid);
-                    paymentStore.set(id, { ...paymentStore.get(id), status: 'COMPLETED' });
-                    
-                    return res.status(200).json({ success: true, paymentId: id, txid, recovered: true });
-                }
-                
                 if (payment.status === 'SUBMITTED' && payment.txid) {
-                    // Langkah 6 sahaja: Complete
+                    console.log(`Resuming at STEP 6: completePayment for ${id}`);
                     await pi.completePayment(id, payment.txid);
                     paymentStore.set(id, { ...payment, status: 'COMPLETED' });
-                    
-                    return res.status(200).json({ success: true, paymentId: id, txid: payment.txid, recovered: true });
+                    console.log("Recovery success");
+                    return res.status(200).json({ 
+                        success: true, paymentId: id, txid: payment.txid, amount: parseFloat(amount), recovered: true 
+                    });
                 }
-            } catch (error) {
-                console.error("Pemulihan gagal:", error.message);
-                // Jangan return error, teruskan untuk cipta pembayaran baru sebagai fallback
+            } catch (e) {
+                console.log("Recovery failed:", e.message);
             }
         }
     }
 
-    // Jika tiada pembayaran tertunda, mulakan aliran baru
+    // ========== 6 LANGKAH SOP RASMI ==========
     try {
+        // LANGKAH 1: Initialize SDK
+        console.log("\n--- STEP 1: Initialize SDK ---");
+        console.log("DEBUG: typeof PiNetwork =", typeof PiNetwork);
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
+        console.log("✅ SDK initialized, methods:", Object.keys(pi));
 
-        // Langkah 1 & 2: Init dan Create Payment
+        // LANGKAH 2: Create Payment
+        console.log("\n--- STEP 2: createPayment ---");
         const paymentId = await pi.createPayment({
             amount: parseFloat(amount),
             memo: "A2U REWARD",
             metadata: { source: "claim_reward", timestamp: Date.now() },
             uid: uid
         });
+        console.log("✅ Payment created:", paymentId);
 
-        // 🔒 LANGKAH 3: SIMPAN PAYMENT ID (KRITIKAL)
+        // LANGKAH 3: Store paymentId
+        console.log("\n--- STEP 3: Store paymentId ---");
         paymentStore.set(paymentId, { 
-            uid, 
-            amount, 
-            status: 'CREATED', 
-            createdAt: Date.now() 
+            uid, amount, status: 'CREATED', createdAt: Date.now() 
         });
+        console.log("✅ Stored");
 
-        // Langkah 4: Submit ke Blockchain
+        // LANGKAH 4: Submit Payment
+        console.log("\n--- STEP 4: submitPayment ---");
         const txid = await pi.submitPayment(paymentId);
-        
-        // 🔒 LANGKAH 5: SIMPAN TXID (KRITIKAL)
-        paymentStore.set(paymentId, { 
-            ...paymentStore.get(paymentId), 
-            txid, 
-            status: 'SUBMITTED' 
-        });
+        console.log("✅ Submitted, txid:", txid);
 
-        // Langkah 6: Complete Payment
+        // LANGKAH 5: Store txid
+        console.log("\n--- STEP 5: Store txid ---");
+        paymentStore.set(paymentId, { 
+            ...paymentStore.get(paymentId), txid, status: 'SUBMITTED' 
+        });
+        console.log("✅ Stored");
+
+        // LANGKAH 6: Complete Payment
+        console.log("\n--- STEP 6: completePayment ---");
         await pi.completePayment(paymentId, txid);
         paymentStore.set(paymentId, { 
-            ...paymentStore.get(paymentId), 
-            status: 'COMPLETED' 
+            ...paymentStore.get(paymentId), status: 'COMPLETED' 
+        });
+        console.log("✅ Completed");
+
+        console.log("==================== A2U SUCCESS ====================\n");
+        return res.status(200).json({ 
+            success: true, paymentId, txid, amount: parseFloat(amount) 
         });
 
-        return res.status(200).json({ success: true, paymentId, txid, amount: parseFloat(amount) });
-
     } catch (error) {
-        console.error("A2U Failed:", error.message);
-        return res.status(500).json({ error: error.message || 'A2U payment failed' });
+        console.error("\n==================== A2U FAILED ====================");
+        console.error("Message:", error.message);
+        console.error("Stack:", error.stack);
+        
+        return res.status(500).json({ 
+            error: error.message,
+            type: typeof PiNetwork
+        });
     }
 }

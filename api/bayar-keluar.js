@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
+import StellarSdk from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
     // 1. METHOD CHECK (SOP)
@@ -67,8 +67,8 @@ export default async function handler(req, res) {
 
         // 6b. TANDATANGAN
         console.log("🔏 Menandatangani...");
-        const keypair = Keypair.fromSecret(WALLET_SEED);
-        const tx = new Transaction(txXdr, Networks.PUBLIC);
+        const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
+        const tx = new StellarSdk.Transaction(txXdr, Networks.PUBLIC);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
         console.log("✅ Ditandatangani");

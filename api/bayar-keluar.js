@@ -1,5 +1,10 @@
 import pkg from 'pi-backend';
-const PiNetwork = pkg.default;
+const PiNetwork = pkg?.default || pkg?.PiNetwork || pkg;
+
+// Debug: Pastikan ia constructor
+if (typeof PiNetwork !== 'function') {
+    throw new Error(`PiNetwork is not a function. Type: ${typeof PiNetwork}, Value: ${JSON.stringify(PiNetwork)}`);
+}
 
 // ========== STORAGE (LANGKAH 3 & 5 SOP) ==========
 const paymentStore = new Map();

@@ -1,4 +1,5 @@
-import PiNetwork from 'pi-backend';
+import pkg from 'pi-backend';
+console.log("DEBUG pi-backend import:", Object.keys(pkg));
 
 // Storage ringkas (GANTI DENGAN DATABASE SEBENAR untuk produksi)
 const paymentStore = new Map();

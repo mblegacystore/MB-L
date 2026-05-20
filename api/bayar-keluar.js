@@ -34,6 +34,7 @@ export default async function handler(req, res) {
         }
         console.log("✅ Token sah:", meRes.data.username);
     } catch (error) {
+        console.error("❌ Pi /me error:", error.response?.status, error.response?.data);
         return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
         // 6b. TANDATANGAN
         console.log("🔏 Menandatangani...");
         const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
-        const tx = new StellarSdk.Transaction(txXdr, Networks.TESTNET);
+        const tx = new StellarSdk.Transaction(txXdr, StellarSdk.Networks.TESTNET);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
         console.log("✅ Ditandatangani");
@@ -103,4 +104,4 @@ export default async function handler(req, res) {
             error: error.response?.data?.error || error.message
         });
     }
-             }
+}

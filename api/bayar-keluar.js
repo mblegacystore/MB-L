@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     try {
         const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
         
-        const createRes = await axios.post(`${BASE}/payments`, {
+        const createRes = await axios.post(`${BASE}/payment`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
             metadata: metadata || {},

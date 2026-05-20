@@ -1,3 +1,28 @@
+// ========== PEMBOLEH UBAH GLOBAL ==========
+let currentUser = null;
+let pendingIncompleteCount = 0;
+let isClaiming = false; // 🆕 PENGUNCI BUTANG A2U (Anti-Spam Klik)
+
+function updateStatus(msg) {
+    document.getElementById("stSticky").textContent = msg;
+}
+
+function tryEnablePaymentButtons() {
+    const btn1 = document.getElementById("btn-pay1");
+    const btn10 = document.getElementById("btn-pay10");
+    if (currentUser && pendingIncompleteCount === 0) {
+        if (btn1) btn1.disabled = false;
+        if (btn10) btn10.disabled = false;
+    }
+}
+
+function copySOP() {
+    const sop = document.getElementById("sop-text").textContent;
+    navigator.clipboard.writeText(sop).then(function() {
+        updateStatus("SOP disalin!");
+    });
+}
+
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     console.log("DEBUG [onIncompletePaymentFound] Payment ID:", payment.identifier);
@@ -51,7 +76,7 @@ async function bersihkanSebelumBayar() {
     }
 }
 
-// ========== U2A: BELI PRODUK (STABIL – JANGAN UBAH) ==========
+// ========== U2A: BELI PRODUK (STABIL – TIDAK DIUBAH) ==========
 async function buyProduct(key, amount) {
     console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
     if (!currentUser) { 
@@ -125,14 +150,24 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (BETUL – TIADA Pi.createPayment) ==========
+// ========== A2U: CLAIM REWARD (DIKEMAS KINI – ANTI-SPAM KLIK) ==========
 async function requestPayout() {
+    // 🔒 LAPISAN 1: Pencegahan Klik Berganda (Anti-Spam)
+    if (isClaiming) {
+        updateStatus("Tuntutan sedang diproses...");
+        console.log("DEBUG [requestPayout] Blocked by isClaiming lock");
+        return;
+    }
+
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
         updateStatus("Sila login dahulu.");
         console.log("DEBUG [requestPayout] No currentUser");
         return; 
     }
+    
+    // 🔒 Kunci butang sebelum proses bermula
+    isClaiming = true;
     
     console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
@@ -160,11 +195,100 @@ async function requestPayout() {
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
             }
+        } else if (result.retryAfter) {
+            // Maklum balas untuk ralat 429 (tuntutan berulang dari backend)
+            const minutes = Math.ceil(result.retryAfter / 60000);
+            updateStatus(`Sila tunggu ${minutes} minit`);
         } else {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
     } catch (error) {
         console.error("DEBUG [requestPayout] Error:", error);
         updateStatus("Rangkaian error. Sila cuba lagi.");
+    } finally {
+        // 🔓 Buka kunci butang selepas semuanya selesai
+        isClaiming = false;
+        console.log("DEBUG [requestPayout] isClaiming unlocked");
     }
 }
+
+// ========== AUTENTIKASI ==========
+/**
+ * Fungsi Utama untuk Log Masuk (Autentikasi)
+ * @param {boolean} isSilent - Jika true, ia akan berjalan di belakang tabir tanpa mengubah UI status log masuk
+ */
+async function doLogin(isSilent = false) {
+    if (!isSilent) updateStatus("Menyambung...");
+    
+    try {
+        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+        
+        currentUser = {
+            uid: auth.user.uid,
+            username: auth.user.username,
+            wallet_address: auth.user.wallet_address || "",
+            accessToken: auth.accessToken
+        };
+        
+        const userData = {
+            ...currentUser,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        if (localStorage.getItem('mb-legacy-bought-echelon') === 'true') currentUser.boughtEchelon = true;
+        if (localStorage.getItem('mb-legacy-bought-command') === 'true') currentUser.boughtCommand = true;
+        
+        updateStatus(currentUser.username);
+        document.getElementById("btn-login").style.display = "none";
+        tryEnablePaymentButtons();
+        
+        console.log("Sesi Pi Network berjaya diaktifkan semula untuk UID:", currentUser.uid);
+        
+    } catch (e) {
+        console.error("Autentikasi Pi Gagal:", e);
+        
+        if (!isSilent) {
+            updateStatus("Login gagal: " + e.message);
+        } else {
+            document.getElementById("btn-login").style.display = "block";
+            updateStatus("Sila login semula");
+        }
+    }
+}
+
+/**
+ * Memulihkan Sesi Lama (Restore Session)
+ */
+async function restoreSession() {
+    const saved = localStorage.getItem('currentUser');
+    if (!saved) return;
+    
+    try {
+        const userData = JSON.parse(saved);
+        
+        currentUser = {
+            uid: userData.uid,
+            username: userData.username,
+            wallet_address: userData.wallet_address || "",
+            accessToken: userData.accessToken
+        };
+        
+        updateStatus("Welcome back: " + currentUser.username);
+        document.getElementById("btn-login").style.display = "none";
+        tryEnablePaymentButtons();
+        
+        console.log("Menyegarkan sesi aktif dengan pelayan Pi Network...");
+        await doLogin(true);
+        
+    } catch (e) {
+        console.error("Gagal memulihkan sesi dari storage:", e);
+    }
+}
+
+// Pemicu Automatik Apabila Aplikasi Dimuatkan
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restoreSession);
+} else {
+    restoreSession();
+                                 }

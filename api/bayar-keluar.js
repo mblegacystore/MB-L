@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
 
     // Ini adalah URL yang TEPAT dan MESTI digunakan, seperti yang diarahkan.
-    const BASE = 'https://api.minepi.com/v2';
+    const BASE = 'https://api.minepi.com/v2/payments';
 
     if (!API_KEY || !WALLET_SEED) {
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });

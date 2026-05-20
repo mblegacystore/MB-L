@@ -1,103 +1,51 @@
 import axios from 'axios';
 import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
-// Database functions (implement mengikut database anda)
-const db = {
-    async getPendingPayment(uid) {
-        // SELECT * FROM pi_payments WHERE user_uid = ? AND status IN ('pending', 'submitted')
-    },
-    async savePayment(data) {
-        // INSERT INTO pi_payments ...
-    },
-    async updatePaymentStatus(paymentId, status, txid = null) {
-        // UPDATE pi_payments SET status = ?, txid = ? WHERE payment_id = ?
-    }
-};
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return res.status(405).json({ error: 'Kaedah Tidak Dibenarkan' });
     }
 
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
     const BASE = 'https://api.minepi.com/v2';
+    const NETWORK = process.env.PI_NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
 
-    // Validation
+    // Validasi konfigurasi
     if (!API_KEY || !WALLET_SEED) {
-        return res.status(500).json({ error: "Server config incomplete" });
+        return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // ========== STEP 0: CHECK EXISTING PENDING PAYMENT ==========
-    const existingPayment = await db.getPendingPayment(uid);
-    
-    if (existingPayment && existingPayment.status === 'pending') {
-        // Ada payment pending - jangan create baru
-        return res.status(409).json({
-            error: "Pending payment exists",
-            paymentId: existingPayment.payment_id,
-            action: "Complete or cancel existing payment first"
-        });
-    }
-    
-    if (existingPayment && existingPayment.status === 'submitted') {
-        // Ada payment dah submit tapi belum complete - try complete semula
-        try {
-            const completeRes = await axios.post(
-                `${BASE}/payments/${existingPayment.payment_id}/complete`,
-                { txid: existingPayment.txid },
-                { headers: { 'Authorization': `Key ${API_KEY}` } }
-            );
-            
-            await db.updatePaymentStatus(existingPayment.payment_id, 'completed');
-            
-            return res.status(200).json({
-                success: true,
-                paymentId: existingPayment.payment_id,
-                txid: existingPayment.txid,
-                recovered: true
-            });
-        } catch (error) {
-            return res.status(500).json({
-                error: "Stuck payment detected. Please contact support.",
-                paymentId: existingPayment.payment_id
-            });
-        }
+    if (!uid || !amount || !accessToken) {
+        return res.status(400).json({ error: "Parameter uid, amount, accessToken diperlukan" });
     }
 
-    // Verify access token
+    // ========== STEP 0: VERIFY ACCESS TOKEN ==========
     try {
         const meRes = await axios.get(`${BASE}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        if (meRes.data?.uid !== uid) {
-            return res.status(401).json({ error: "Invalid access token" });
+
+        if (!meRes.data?.uid || meRes.data.uid !== uid) {
+            return res.status(401).json({ error: "Access token tidak sah" });
         }
+        console.log("✅ Token sah untuk user:", meRes.data.username);
     } catch (error) {
-        return res.status(401).json({ error: "Token verification failed" });
+        console.error("Token verification failed:", error.response?.data);
+        return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
-    // ========== STEP 1: CREATE PAYMENT ==========
-    let paymentId;
+    // ========== PROSES A2U PAYMENT ==========
     try {
         const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
         
-        // Simpan pending record dulu sebelum API call
-        const tempId = `temp-${Date.now()}`;
-        await db.savePayment({
-            user_uid: uid,
-            amount: parseFloat(amount),
-            memo: 'MB-LEGACY-A2U',
-            metadata: metadata || {},
-            payment_id: tempId,
-            status: 'pending'
-        });
-
+        // STEP 1: CREATE PAYMENT
+        console.log("📝 Step 1: Creating payment...");
         const createRes = await axios.post(`${BASE}/payments`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
-            metadata: { ...metadata, db_id: tempId },
+            metadata: metadata || {},
             uid: uid
         }, {
             headers: {
@@ -107,59 +55,77 @@ export default async function handler(req, res) {
             }
         });
 
-        paymentId = createRes.data.identifier;
-        
-        // Update dengan payment_id sebenar
-        await db.updatePaymentStatus(tempId, 'pending', null, paymentId);
-        
-    } catch (error) {
-        await db.updatePaymentStatus(tempId, 'cancelled');
-        throw error;
-    }
+        const paymentId = createRes.data.identifier;
+        console.log("✅ Payment created:", paymentId);
 
-    // ========== STEP 2: SUBMIT TO BLOCKCHAIN ==========
-    let txid;
-    try {
-        const submitRes = await axios.post(
-            `${BASE}/payments/${paymentId}/submit`,
-            {},
-            { headers: { 'Authorization': `Key ${API_KEY}` } }
-        );
-        
-        txid = submitRes.data.transaction?.txid;
-        
-        // Update status ke 'submitted' dengan txid
-        await db.updatePaymentStatus(paymentId, 'submitted', txid);
-        
-    } catch (error) {
-        // Submit gagal - payment masih dalam status 'pending' di database
-        await db.updatePaymentStatus(paymentId, 'pending');
-        throw error;
-    }
+        // STEP 2: SIGN TRANSACTION (jika perlu)
+        let signedTxXdr = null;
+        if (createRes.data.transaction?.to_sign) {
+            console.log("🔏 Step 2: Signing transaction...");
+            const keypair = Keypair.fromSecret(WALLET_SEED);
+            const tx = new Transaction(createRes.data.transaction.to_sign, NETWORK);
+            tx.sign(keypair);
+            signedTxXdr = tx.toEnvelope().toXDR('base64');
+            console.log("✅ Transaction signed");
+        }
 
-    // ========== STEP 3: COMPLETE PAYMENT ==========
-    try {
+        // STEP 3: SUBMIT TO BLOCKCHAIN (WAJIB!)
+        console.log("📤 Step 3: Submitting to blockchain...");
+        let txid = null;
+        
+        if (signedTxXdr) {
+            const submitRes = await axios.post(
+                `${BASE}/payments/${paymentId}/submit`,
+                { txid: signedTxXdr },
+                { headers: { 'Authorization': `Key ${API_KEY}` } }
+            );
+            txid = submitRes.data.transaction?.txid;
+        } else {
+            const submitRes = await axios.post(
+                `${BASE}/payments/${paymentId}/submit`,
+                {},
+                { headers: { 'Authorization': `Key ${API_KEY}` } }
+            );
+            txid = submitRes.data.transaction?.txid;
+        }
+        
+        console.log("✅ Submitted to blockchain, txid:", txid);
+
+        // STEP 4: COMPLETE PAYMENT
+        console.log("✅ Step 4: Completing payment...");
         await axios.post(
             `${BASE}/payments/${paymentId}/complete`,
             { txid: txid },
             { headers: { 'Authorization': `Key ${API_KEY}` } }
         );
-        
-        // Complete success - update ke 'completed'
-        await db.updatePaymentStatus(paymentId, 'completed', txid);
-        
-    } catch (error) {
-        // Complete gagal TAPI transaction dah submit ke blockchain
-        // Status kekal 'submitted' - recovery nanti akan handle
-        console.error("Complete failed but txid exists:", txid);
-        throw error;
-    }
 
-    return res.status(200).json({
-        success: true,
-        paymentId,
-        txid,
-        amount: parseFloat(amount),
-        userUid: uid
-    });
-            }
+        console.log("🎉 A2U payment completed successfully!");
+        
+        return res.status(200).json({
+            success: true,
+            paymentId: paymentId,
+            txid: txid,
+            amount: parseFloat(amount),
+            userUid: uid
+        });
+
+    } catch (error) {
+        console.error("❌ Payment error:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
+        // Handle specific error
+        if (error.response?.data?.error === 'payment_already_linked_with_a_tx') {
+            return res.status(409).json({
+                error: "Payment already processed",
+                details: "This payment has already been linked to a transaction"
+            });
+        }
+        
+        return res.status(error.response?.status || 500).json({
+            error: error.response?.data?.error || error.message
+        });
+    }
+        }

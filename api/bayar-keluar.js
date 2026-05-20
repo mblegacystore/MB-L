@@ -1,5 +1,5 @@
 import axios from 'axios';
-import StellarSdk from '@stellar/stellar-sdk';
+import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
     // 1. METHOD CHECK (SOP)
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const BASE = 'https://api.testnet.minepi.com/v2'; // URL RASMI PI
+    const BASE = 'https://api.minepi.com/v2'; // URL RASMI PI
 
     // 3. SEMAK KONFIGURASI (SOP)
     if (!API_KEY || !WALLET_SEED) {
@@ -34,7 +34,6 @@ export default async function handler(req, res) {
         }
         console.log("✅ Token sah:", meRes.data.username);
     } catch (error) {
-        console.error("❌ Pi /me error:", error.response?.status, error.response?.data);
         return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
@@ -68,8 +67,8 @@ export default async function handler(req, res) {
 
         // 6b. TANDATANGAN
         console.log("🔏 Menandatangani...");
-        const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
-        const tx = new StellarSdk.Transaction(txXdr, StellarSdk.Networks.TESTNET);
+        const keypair = Keypair.fromSecret(WALLET_SEED);
+        const tx = new Transaction(txXdr, Networks.PUBLIC);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
         console.log("✅ Ditandatangani");

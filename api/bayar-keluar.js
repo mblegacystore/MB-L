@@ -68,7 +68,7 @@ export default async function handler(req, res) {
         // 6b. TANDATANGAN
         console.log("🔏 Menandatangani...");
         const keypair = StellarSdk.Keypair.fromSecret(WALLET_SEED);
-        const tx = new StellarSdk.Transaction(txXdr, Networks.PUBLIC);
+        const tx = new StellarSdk.Transaction(txXdr, Networks.TESTNET);
         tx.sign(keypair);
         const signedTxXdr = tx.toEnvelope().toXDR('base64');
         console.log("✅ Ditandatangani");

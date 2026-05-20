@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const BASE = 'https://api.pinet.com/v2'; // URL RASMI PI
+    const BASE = 'https://api.pinet.com'; // URL RASMI PI
 
     // 3. SEMAK KONFIGURASI (SOP)
     if (!API_KEY || !WALLET_SEED) {

@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const { uid, amount, accessToken, metadata } = req.body;
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const BASE = 'https://api.minepi.com/v2';
+    const BASE = 'https://api.testnet.minepi.com/v2';
 
     if (!uid || !amount || !accessToken) {
         return res.status(400).json({ error: "Parameter diperlukan" });

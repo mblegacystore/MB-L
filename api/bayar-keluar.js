@@ -1,4 +1,5 @@
-import PiNetwork from 'pi-backend';
+import pkg from 'pi-backend';
+const PiNetwork = pkg.default;
 
 // ========== STORAGE (LANGKAH 3 & 5 SOP) ==========
 const paymentStore = new Map();
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
         console.log("\n--- STEP 1: Initialize SDK ---");
         console.log("DEBUG: typeof PiNetwork =", typeof PiNetwork);
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
-        console.log("✅ SDK initialized, methods:", Object.keys(pi));
+        console.log("✅ SDK initialized");
 
         // LANGKAH 2: Create Payment
         console.log("\n--- STEP 2: createPayment ---");
@@ -104,8 +105,7 @@ export default async function handler(req, res) {
         console.error("Stack:", error.stack);
         
         return res.status(500).json({ 
-            error: error.message,
-            type: typeof PiNetwork
+            error: error.message
         });
     }
 }

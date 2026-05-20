@@ -2,28 +2,26 @@ import axios from 'axios';
 import { Keypair, Transaction, Networks } from '@stellar/stellar-sdk';
 
 export default async function handler(req, res) {
-    // 1. METHOD CHECK (SOP)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Kaedah Tidak Dibenarkan' });
     }
 
-    // 2. INPUT & KONFIGURASI
     const { uid, amount, accessToken, metadata } = req.body;
-    const API_KEY = process.env.PI_API_KEY_TESTNET;
+    const API_KEY = process.env.PI_API_KEY;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
-    const BASE = 'https://api.minepi.com/v2/payments'; // URL RASMI PI
+    const BASE = 'https://api.minepi.com/v2';
+    const NETWORK = process.env.PI_NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
 
-    // 3. SEMAK KONFIGURASI (SOP)
+    // Validasi konfigurasi
     if (!API_KEY || !WALLET_SEED) {
         return res.status(500).json({ error: "Konfigurasi server tidak lengkap" });
     }
 
-    // 4. SEMAK PARAMETER (SOP)
     if (!uid || !amount || !accessToken) {
         return res.status(400).json({ error: "Parameter uid, amount, accessToken diperlukan" });
     }
 
-    // 5. SAHKAN ACCESS TOKEN (SOP - WAJIB)
+    // Verify access token
     try {
         const meRes = await axios.get(`${BASE}/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -32,17 +30,17 @@ export default async function handler(req, res) {
         if (!meRes.data?.uid || meRes.data.uid !== uid) {
             return res.status(401).json({ error: "Access token tidak sah" });
         }
-        console.log("✅ Token sah:", meRes.data.username);
+        console.log("✅ Token sah untuk user:", meRes.data.username);
     } catch (error) {
+        console.error("Token verification failed:", error.response?.data);
         return res.status(401).json({ error: "Gagal mengesahkan access token" });
     }
 
-    // 6. A2U PAYMENT (SOP)
+    // Proses A2U payment
     try {
-        // 6a. CIPTA PEMBAYARAN
         const idempotencyKey = `a2u-${uid}-${amount}-${Date.now()}`;
-        console.log("📤 Mencipta pembayaran...");
         
+        // 1. Create payment
         const createRes = await axios.post(`${BASE}/payments`, {
             amount: parseFloat(amount),
             memo: 'MB-LEGACY-A2U',
@@ -57,48 +55,48 @@ export default async function handler(req, res) {
         });
 
         const paymentId = createRes.data.identifier;
-        const txXdr = createRes.data.transaction?.to_sign;
-
-        if (!txXdr) {
-            throw new Error('Transaction XDR missing');
+        
+        // 2. Sign transaction if needed
+        let signedTxXdr = null;
+        if (createRes.data.transaction?.to_sign) {
+            const keypair = Keypair.fromSecret(WALLET_SEED);
+            const tx = new Transaction(createRes.data.transaction.to_sign, NETWORK);
+            tx.sign(keypair);
+            signedTxXdr = tx.toEnvelope().toXDR('base64');
         }
 
-        console.log("✅ Pembayaran dicipta:", paymentId);
-
-        // 6b. TANDATANGAN
-        console.log("🔏 Menandatangani...");
-        const keypair = Keypair.fromSecret(WALLET_SEED);
-        const tx = new Transaction(txXdr, Networks.PUBLIC);
-        tx.sign(keypair);
-        const signedTxXdr = tx.toEnvelope().toXDR('base64');
-        console.log("✅ Ditandatangani");
-
-        // 6c. SUBMIT
-        console.log("📤 Menghantar...");
-        const submitRes = await axios.post(
-            `${BASE}/payments/${paymentId}/submit`,
-            { txid: signedTxXdr },
-            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
-        );
-        console.log("✅ Dihantar:", submitRes.data.txid);
-
-        // 6d. COMPLETE
-        console.log("📤 Melengkapkan...");
+        // 3. Approve payment (server-side)
         await axios.post(
-            `${BASE}/payments/${paymentId}/complete`,
-            { txid: submitRes.data.txid },
-            { headers: { 'Authorization': `Key ${API_KEY}`, 'Content-Type': 'application/json' } }
+            `${BASE}/payments/${paymentId}/approve`,
+            {},
+            { headers: { 'Authorization': `Key ${API_KEY}` } }
         );
-        console.log("✅ Selesai!");
 
+        // 4. Complete payment with txid
+        if (signedTxXdr) {
+            await axios.post(
+                `${BASE}/payments/${paymentId}/complete`,
+                { txid: signedTxXdr },
+                { headers: { 'Authorization': `Key ${API_KEY}` } }
+            );
+        }
+
+        console.log("✅ A2U payment completed:", paymentId);
+        
         return res.status(200).json({
             success: true,
             paymentId,
-            txid: submitRes.data.txid
+            amount: parseFloat(amount),
+            userUid: uid
         });
 
     } catch (error) {
-        console.error("❌ Ralat:", error.response?.status, error.response?.data || error.message);
+        console.error("Payment error:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
         return res.status(error.response?.status || 500).json({
             error: error.response?.data?.error || error.message
         });

@@ -9,6 +9,11 @@ if (typeof PiNetwork !== 'function') {
 // ========== STORAGE (LANGKAH 3 & 5 SOP) ==========
 const paymentStore = new Map();
 
+// ========== STORAGE PENCEGAHAN TUNTUTAN BERULANG ==========
+// Dalam produksi: GANTI DENGAN PANGKALAN DATA SEBENAR
+const claimStore = new Map();
+const CLAIM_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 jam (laras jika perlu)
+
 export default async function handler(req, res) {
     console.log("\n==================== A2U 6-STEP SOP ====================");
     
@@ -30,6 +35,21 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server config error' });
     }
 
+    // ========== PENCEGAHAN TUNTUTAN BERULANG (ANTI-DRAIN) ==========
+    const lastClaim = claimStore.get(uid);
+    if (lastClaim) {
+        const timeSinceLastClaim = Date.now() - lastClaim.timestamp;
+        if (timeSinceLastClaim < CLAIM_COOLDOWN_MS) {
+            const remainingMs = CLAIM_COOLDOWN_MS - timeSinceLastClaim;
+            const remainingMinutes = Math.ceil(remainingMs / 60000);
+            console.log(`❌ Claim blocked for ${uid}. Cooldown: ${remainingMinutes} min remaining`);
+            return res.status(429).json({ 
+                error: `Anda sudah menuntut. Sila tunggu ${remainingMinutes} minit lagi.`,
+                retryAfter: remainingMs
+            });
+        }
+    }
+
     // ========== SEMAK PEMBAYARAN TERTUNDA ==========
     console.log("\n--- Checking pending payments ---");
     for (const [id, payment] of paymentStore.entries()) {
@@ -43,6 +63,15 @@ export default async function handler(req, res) {
                     console.log(`Resuming at STEP 6: completePayment for ${id}`);
                     await pi.completePayment(id, payment.txid);
                     paymentStore.set(id, { ...payment, status: 'COMPLETED' });
+                    
+                    // Rekod tuntutan yang dipulihkan
+                    claimStore.set(uid, {
+                        timestamp: Date.now(),
+                        paymentId: id,
+                        txid: payment.txid,
+                        amount: parseFloat(amount)
+                    });
+                    
                     console.log("Recovery success");
                     return res.status(200).json({ 
                         success: true, paymentId: id, txid: payment.txid, amount: parseFloat(amount), recovered: true 
@@ -99,6 +128,15 @@ export default async function handler(req, res) {
         });
         console.log("✅ Completed");
 
+        // ========== REKOD TUNTUTAN BERJAYA ==========
+        claimStore.set(uid, {
+            timestamp: Date.now(),
+            paymentId: paymentId,
+            txid: txid,
+            amount: parseFloat(amount)
+        });
+        console.log(`✅ Claim recorded for ${uid}`);
+
         console.log("==================== A2U SUCCESS ====================\n");
         return res.status(200).json({ 
             success: true, paymentId, txid, amount: parseFloat(amount) 
@@ -113,4 +151,4 @@ export default async function handler(req, res) {
             error: error.message
         });
     }
-}
+                        }

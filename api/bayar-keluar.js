@@ -1,9 +1,11 @@
 import pkg from 'pi-backend';
 const PiNetwork = pkg?.default || pkg?.PiNetwork || pkg;
 
+// 🔒 Semakan constructor
 if (typeof PiNetwork !== 'function') {
     throw new Error(`PiNetwork is not a function. Type: ${typeof PiNetwork}`);
 }
+console.log("✅ PiNetwork constructor verified");
 
 const paymentStore = new Map();
 

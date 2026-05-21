@@ -129,12 +129,14 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (RINGKAS & SELAMAT) ==========
+// ========== A2U: CLAIM REWARD (TANPA PENGUNCI - UNTUK UJIAN) ==========
 async function requestPayout() {
-    if (isClaiming) return;
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    console.log("DEBUG [requestPayout] Called");
+    if (!currentUser) { 
+        updateStatus("Sila login dahulu.");
+        return; 
+    }
     
-    isClaiming = true;
     updateStatus("Memproses ganjaran...");
     
     try {
@@ -156,15 +158,11 @@ async function requestPayout() {
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
             }
-        } else if (result.retryAfter) {
-            updateStatus(`Sila tunggu ${Math.ceil(result.retryAfter / 60000)} minit`);
         } else {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
     } catch (error) {
         updateStatus("Rangkaian error. Sila cuba lagi.");
-    } finally {
-        isClaiming = false;
     }
 }
 

@@ -42,15 +42,30 @@
 
 <!-- ===== PIONEER REWARD (CLAIM A2U) ===== -->
 <div class="treasury-section" id="payout-content">
-    <div class="product-card" onclick="requestPayout()" style="border-color:#FFD700;">
-        <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
-        <div class="product-info">
-            <h3 id="title-payout">CLAIM TESTNET PI (A2U)</h3>
-            <p id="desc-payout">Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
-            <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
+    
+    <!-- GUNA <button> UNTUK INTERAKSI LEBIH RELIABLE -->
+    <button onclick="requestPayout()" style="
+        display: block;
+        width: 100%;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        text-align: left;
+        -webkit-tap-highlight-color: transparent;
+    ">
+        <div class="product-card" style="border-color:#FFD700; pointer-events: none;">
+            <div class="free-banner" style="background:#FFD700; color:#000;">🎁 PIONEER REWARD</div>
+            <div class="product-info">
+                <h3 id="title-payout">CLAIM TESTNET PI (A2U)</h3>
+                <p id="desc-payout">Verify our payout system. Receive 0.1 Testnet Pi directly to your wallet.</p>
+                <span class="product-price" style="color:#FFD700;">+ 0.1000000 Pi</span>
+            </div>
         </div>
-    </div>
-    <!-- LABEL KEKAL (GANTI POPUP WARNING) -->
+    </button>
+    
+    <!-- LABEL KEKAL -->
     <div style="background:rgba(255,215,0,0.1); border-left:4px solid #FFD700; padding:8px 12px; margin-top:10px; border-radius:4px; font-size:0.7rem; color:#ddd;">
         ⚠️ When you tap "PIONEER REWARD", Pi Browser will ask you to unlock your wallet (passphrase or biometric). This is NORMAL. Our app will NEVER ask for your passphrase.
     </div>

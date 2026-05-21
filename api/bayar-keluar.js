@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server config error' });
     }
 
-    // ========== SEMAK PEMBAYARAN TERTUNDA ==========
+    // ========== LANGKAH 3 (SEMAKAN): Cegah pembayaran berganda ==========
     console.log("\n--- Checking pending payments ---");
     for (const [id, payment] of paymentStore.entries()) {
         if (payment.uid === uid && payment.status !== 'COMPLETED' && payment.status !== 'CANCELLED') {
@@ -57,11 +57,12 @@ export default async function handler(req, res) {
 
     // ========== 6 LANGKAH SOP RASMI ==========
     try {
+        // LANGKAH 1: Initialize SDK
         console.log("\n--- STEP 1: Initialize SDK ---");
-        console.log("DEBUG: typeof PiNetwork =", typeof PiNetwork);
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
         console.log("✅ SDK initialized");
 
+        // LANGKAH 2: Create Payment
         console.log("\n--- STEP 2: createPayment ---");
         const paymentId = await pi.createPayment({
             amount: parseFloat(amount),
@@ -71,22 +72,26 @@ export default async function handler(req, res) {
         });
         console.log("✅ Payment created:", paymentId);
 
+        // LANGKAH 3: Store paymentId
         console.log("\n--- STEP 3: Store paymentId ---");
         paymentStore.set(paymentId, { 
             uid, amount, status: 'CREATED', createdAt: Date.now() 
         });
         console.log("✅ Stored");
 
+        // LANGKAH 4: Submit Payment
         console.log("\n--- STEP 4: submitPayment ---");
         const txid = await pi.submitPayment(paymentId);
         console.log("✅ Submitted, txid:", txid);
 
+        // LANGKAH 5: Store txid
         console.log("\n--- STEP 5: Store txid ---");
         paymentStore.set(paymentId, { 
             ...paymentStore.get(paymentId), txid, status: 'SUBMITTED' 
         });
         console.log("✅ Stored");
 
+        // LANGKAH 6: Complete Payment
         console.log("\n--- STEP 6: completePayment ---");
         await pi.completePayment(paymentId, txid);
         paymentStore.set(paymentId, { 

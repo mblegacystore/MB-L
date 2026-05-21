@@ -1,7 +1,6 @@
 // ========== PEMBOLEH UBAH GLOBAL ==========
 let currentUser = null;
 let pendingIncompleteCount = 0;
-let isClaiming = false; // 🆕 Untuk A2U: Pencegah spam klik
 
 // ========== UTILITI ==========
 function updateStatus(msg) { document.getElementById("stSticky").textContent = msg; }
@@ -129,7 +128,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (TANPA PENGUNCI - UNTUK UJIAN) ==========
+// ========== A2U: CLAIM REWARD (TANPA PENGUNCI) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
@@ -158,6 +157,8 @@ async function requestPayout() {
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
             }
+        } else if (result.retryAfter) {
+            updateStatus(`Sila tunggu ${Math.ceil(result.retryAfter / 60000)} minit`);
         } else {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
@@ -229,4 +230,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', restoreSession);
 } else {
     restoreSession();
-}
+                                          }

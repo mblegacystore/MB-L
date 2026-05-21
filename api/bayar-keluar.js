@@ -12,7 +12,7 @@ const paymentStore = new Map();
 // ========== STORAGE PENCEGAHAN TUNTUTAN BERULANG ==========
 // Dalam produksi: GANTI DENGAN PANGKALAN DATA SEBENAR
 const claimStore = new Map();
-const CLAIM_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 jam (laras jika perlu)
+const CLAIM_COOLDOWN_MS = 30 * 60 * 1000; // 30 minit
 
 export default async function handler(req, res) {
     console.log("\n==================== A2U 6-STEP SOP ====================");
@@ -37,6 +37,13 @@ export default async function handler(req, res) {
 
     // ========== PENCEGAHAN TUNTUTAN BERULANG (ANTI-DRAIN) ==========
     const lastClaim = claimStore.get(uid);
+    
+    // 🆕 Auto-padam rekod yang sudah tamat tempoh
+    if (lastClaim && (Date.now() - lastClaim.timestamp) >= CLAIM_COOLDOWN_MS) {
+        claimStore.delete(uid);
+        console.log(`🔓 Claim record expired & deleted for ${uid}`);
+    }
+    
     if (lastClaim) {
         const timeSinceLastClaim = Date.now() - lastClaim.timestamp;
         if (timeSinceLastClaim < CLAIM_COOLDOWN_MS) {
@@ -64,7 +71,6 @@ export default async function handler(req, res) {
                     await pi.completePayment(id, payment.txid);
                     paymentStore.set(id, { ...payment, status: 'COMPLETED' });
                     
-                    // Rekod tuntutan yang dipulihkan
                     claimStore.set(uid, {
                         timestamp: Date.now(),
                         paymentId: id,
@@ -85,13 +91,10 @@ export default async function handler(req, res) {
 
     // ========== 6 LANGKAH SOP RASMI ==========
     try {
-        // LANGKAH 1: Initialize SDK
         console.log("\n--- STEP 1: Initialize SDK ---");
-        console.log("DEBUG: typeof PiNetwork =", typeof PiNetwork);
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
         console.log("✅ SDK initialized");
 
-        // LANGKAH 2: Create Payment
         console.log("\n--- STEP 2: createPayment ---");
         const paymentId = await pi.createPayment({
             amount: parseFloat(amount),
@@ -101,34 +104,23 @@ export default async function handler(req, res) {
         });
         console.log("✅ Payment created:", paymentId);
 
-        // LANGKAH 3: Store paymentId
         console.log("\n--- STEP 3: Store paymentId ---");
-        paymentStore.set(paymentId, { 
-            uid, amount, status: 'CREATED', createdAt: Date.now() 
-        });
+        paymentStore.set(paymentId, { uid, amount, status: 'CREATED', createdAt: Date.now() });
         console.log("✅ Stored");
 
-        // LANGKAH 4: Submit Payment
         console.log("\n--- STEP 4: submitPayment ---");
         const txid = await pi.submitPayment(paymentId);
         console.log("✅ Submitted, txid:", txid);
 
-        // LANGKAH 5: Store txid
         console.log("\n--- STEP 5: Store txid ---");
-        paymentStore.set(paymentId, { 
-            ...paymentStore.get(paymentId), txid, status: 'SUBMITTED' 
-        });
+        paymentStore.set(paymentId, { ...paymentStore.get(paymentId), txid, status: 'SUBMITTED' });
         console.log("✅ Stored");
 
-        // LANGKAH 6: Complete Payment
         console.log("\n--- STEP 6: completePayment ---");
         await pi.completePayment(paymentId, txid);
-        paymentStore.set(paymentId, { 
-            ...paymentStore.get(paymentId), status: 'COMPLETED' 
-        });
+        paymentStore.set(paymentId, { ...paymentStore.get(paymentId), status: 'COMPLETED' });
         console.log("✅ Completed");
 
-        // ========== REKOD TUNTUTAN BERJAYA ==========
         claimStore.set(uid, {
             timestamp: Date.now(),
             paymentId: paymentId,
@@ -138,17 +130,13 @@ export default async function handler(req, res) {
         console.log(`✅ Claim recorded for ${uid}`);
 
         console.log("==================== A2U SUCCESS ====================\n");
-        return res.status(200).json({ 
-            success: true, paymentId, txid, amount: parseFloat(amount) 
-        });
+        return res.status(200).json({ success: true, paymentId, txid, amount: parseFloat(amount) });
 
     } catch (error) {
         console.error("\n==================== A2U FAILED ====================");
         console.error("Message:", error.message);
         console.error("Stack:", error.stack);
         
-        return res.status(500).json({ 
-            error: error.message
-        });
+        return res.status(500).json({ error: error.message });
     }
-                        }
+            }

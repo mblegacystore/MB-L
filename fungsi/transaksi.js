@@ -3,7 +3,8 @@ let currentUser = null;
 let pendingIncompleteCount = 0;
 
 function updateStatus(msg) {
-    document.getElementById("stSticky").textContent = msg;
+    const statusEl = document.getElementById("stSticky");
+    if (statusEl) statusEl.textContent = msg;
 }
 
 function tryEnablePaymentButtons() {
@@ -16,10 +17,11 @@ function tryEnablePaymentButtons() {
 }
 
 function copySOP() {
-    const sop = document.getElementById("sop-text").textContent;
-    navigator.clipboard.writeText(sop).then(function() {
+    const sop = document.getElementById("sop-text");
+    if (sop) {
+        navigator.clipboard.writeText(sop.textContent);
         updateStatus("SOP disalin!");
-    });
+    }
 }
 
 // ========== PEMBERSIHAN AWAL ==========
@@ -149,18 +151,18 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (ASAL – TANPA PENGUNCI) ==========
+// ========== CLAIM REWARD (DIBETULKAN - FOKUS INI SAHAJA) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
+    
     if (!currentUser) { 
         updateStatus("Sila login dahulu.");
         console.log("DEBUG [requestPayout] No currentUser");
         return; 
     }
     
-    console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
+    console.log("DEBUG [requestPayout] currentUser.uid:", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
-    console.log("UID:", currentUser.uid);
     
     updateStatus("Memproses ganjaran...");
     
@@ -260,6 +262,26 @@ async function restoreSession() {
     }
 }
 
+// ========== FUNGSI KANDUNGAN ==========
+function showEchelonReport() {
+    console.log("Showing Echelon Report");
+    const content = document.getElementById("locked-content");
+    if (content) {
+        content.innerHTML = "<h2>Echelon Report</h2><p>Premium content unlocked...</p>";
+        content.style.display = "block";
+    }
+}
+
+function showLockedContent(type) {
+    console.log("Showing locked content:", type);
+    const content = document.getElementById("locked-content");
+    if (content) {
+        content.innerHTML = `<h2>${type.toUpperCase()} Content</h2><p>Premium content unlocked...</p>`;
+        content.style.display = "block";
+    }
+}
+
+// ========== INISIALISASI ==========
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', restoreSession);
 } else {

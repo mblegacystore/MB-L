@@ -149,7 +149,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (ASAL) ==========
+// ========== A2U: CLAIM REWARD (ASAL – TANPA PENGUNCI) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 

@@ -125,18 +125,14 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (ASAL + ANTI-KLIK BERULANG) ==========
+// ========== A2U: CLAIM REWARD (TANPA KUNCI - UNTUK UJIAN) ==========
 async function requestPayout() {
-    if (window._claiming) return;
-    
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
         updateStatus("Sila login dahulu.");
         console.log("DEBUG [requestPayout] No currentUser");
         return; 
     }
-    
-    window._claiming = true;
     
     console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
     console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
@@ -170,7 +166,5 @@ async function requestPayout() {
     } catch (error) {
         console.error("DEBUG [requestPayout] Error:", error);
         updateStatus("Rangkaian error. Sila cuba lagi.");
-    } finally {
-        window._claiming = false;
     }
-        }
+}

@@ -12,7 +12,7 @@ const paymentStore = new Map();
 // ========== STORAGE PENCEGAHAN TUNTUTAN BERULANG ==========
 // Dalam produksi: GANTI DENGAN PANGKALAN DATA SEBENAR
 const claimStore = new Map();
-const CLAIM_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 jam (laras jika perlu)
+const CLAIM_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 24 jam (laras jika perlu)
 
 export default async function handler(req, res) {
     console.log("\n==================== A2U 6-STEP SOP ====================");

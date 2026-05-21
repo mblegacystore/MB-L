@@ -1,9 +1,9 @@
 import pkg from 'pi-backend';
 const PiNetwork = pkg?.default || pkg?.PiNetwork || pkg;
 
-// 🔒 Semakan constructor
+// 🔒 SEMAKAN CONSTRUCTOR
 if (typeof PiNetwork !== 'function') {
-    throw new Error(`PiNetwork is not a function. Type: ${typeof PiNetwork}`);
+    throw new Error(`PiNetwork is not a function. Type: ${typeof PiNetwork}, Value: ${JSON.stringify(PiNetwork)}`);
 }
 console.log("✅ PiNetwork constructor verified");
 
@@ -11,17 +11,16 @@ const paymentStore = new Map();
 
 export default async function handler(req, res) {
     console.log("\n==================== A2U START ====================");
-    console.log("DEBUG 0: typeof PiNetwork =", typeof PiNetwork);
     
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { uid, amount } = req.body;
-    console.log("DEBUG 1: uid =", uid, "amount =", amount);
-    
     const API_KEY = process.env.PI_API_KEY_TESTNET;
     const WALLET_SEED = process.env.WALLET_PRIVATE_SEED;
+
+    console.log("DEBUG 1: uid =", uid, "amount =", amount);
     console.log("DEBUG 2: API_KEY exists =", !!API_KEY, "SEED exists =", !!WALLET_SEED);
 
     if (!uid || !amount) {
@@ -31,7 +30,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server config error' });
     }
 
-    // Semak pembayaran tertunda
+    // Semak dan pulihkan pembayaran tertunda
     console.log("DEBUG 3: Checking pending payments...");
     for (const [id, payment] of paymentStore.entries()) {
         if (payment.uid === uid && payment.status !== 'COMPLETED' && payment.status !== 'CANCELLED') {

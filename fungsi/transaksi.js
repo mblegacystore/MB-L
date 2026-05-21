@@ -2,8 +2,9 @@
 let currentUser = null;
 let pendingIncompleteCount = 0;
 
-// ========== UTILITI ==========
-function updateStatus(msg) { document.getElementById("stSticky").textContent = msg; }
+function updateStatus(msg) {
+    document.getElementById("stSticky").textContent = msg;
+}
 
 function tryEnablePaymentButtons() {
     const btn1 = document.getElementById("btn-pay1");
@@ -15,11 +16,13 @@ function tryEnablePaymentButtons() {
 }
 
 function copySOP() {
-    navigator.clipboard.writeText(document.getElementById("sop-text").textContent)
-        .then(() => updateStatus("SOP disalin!"));
+    const sop = document.getElementById("sop-text").textContent;
+    navigator.clipboard.writeText(sop).then(function() {
+        updateStatus("SOP disalin!");
+    });
 }
 
-// ========== PEMBERSIHAN AWAL (U2A) ==========
+// ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     console.log("DEBUG [onIncompletePaymentFound] Payment ID:", payment.identifier);
     updateStatus("Menyelesaikan pembayaran tertunda...");
@@ -31,6 +34,7 @@ async function onIncompletePaymentFound(payment) {
             body: JSON.stringify({ paymentId: payment.identifier })
         });
         let data = await res.json();
+        console.log("DEBUG [onIncompletePaymentFound] Response:", data);
         pendingIncompleteCount--;
         if (data.success) {
             updateStatus("Selesai");
@@ -41,6 +45,7 @@ async function onIncompletePaymentFound(payment) {
         tryEnablePaymentButtons();
         return { status: "CANCELLED" };
     } catch (e) {
+        console.error("DEBUG [onIncompletePaymentFound] Error:", e.message);
         pendingIncompleteCount--;
         updateStatus("Dibersihkan");
         tryEnablePaymentButtons();
@@ -52,9 +57,11 @@ async function bersihkanSebelumBayar() {
     console.log("DEBUG [bersihkanSebelumBayar] Started");
     try {
         const payments = await Pi.getIncompletePayments();
+        console.log("DEBUG [bersihkanSebelumBayar] Incomplete payments count:", payments ? payments.length : 0);
         if (payments && payments.length > 0) {
             updateStatus("Membersihkan transaksi terdahulu...");
             for (let p of payments) {
+                console.log("DEBUG [bersihkanSebelumBayar] Cleaning payment:", p.identifier);
                 await fetch("/api/cuci.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -68,28 +75,36 @@ async function bersihkanSebelumBayar() {
     }
 }
 
-// ========== U2A: BELI PRODUK (STABIL – TIDAK DIUBAH) ==========
+// ========== U2A: BELI PRODUK (STABIL – JANGAN UBAH) ==========
 async function buyProduct(key, amount) {
     console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
-    if (!currentUser) { updateStatus("Sila login dahulu."); return; }
+    if (!currentUser) { 
+        updateStatus("Sila login dahulu.");
+        console.log("DEBUG [buyProduct] No currentUser");
+        return; 
+    }
     
     if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
+        console.log("DEBUG [buyProduct] Echelon already purchased, showing report");
         showEchelonReport();
         return;
     }
     if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
+        console.log("DEBUG [buyProduct] Command already purchased, showing content");
         showLockedContent('command');
         return;
     }
     
     let total = parseFloat(amount).toFixed(7);
     updateStatus("Membayar " + total + " Pi...");
+    console.log("DEBUG [buyProduct] Creating payment for", total, "Pi");
     
     Pi.createPayment(
         { amount: parseFloat(total), memo: "MBL Store", metadata: { product: key } },
         {
             onIncompletePaymentFound: onIncompletePaymentFound,
             onReadyForServerApproval: function(id) {
+                console.log("DEBUG [buyProduct] onReadyForServerApproval - paymentId:", id);
                 fetch("/api/bayar-sah.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -97,12 +112,15 @@ async function buyProduct(key, amount) {
                 });
             },
             onReadyForServerCompletion: function(id, txid) {
+                console.log("DEBUG [buyProduct] onReadyForServerCompletion - paymentId:", id, "txid:", txid);
                 fetch("/api/bayar-selesai.js", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId: id, txid: txid })
                 }).then(function() {
                     updateStatus("Berjaya!");
+                    console.log("DEBUG [buyProduct] Payment completed successfully");
+                    
                     if (key === "echelon") {
                         localStorage.setItem('mb-legacy-bought-echelon', 'true');
                         currentUser.boughtEchelon = true;
@@ -114,27 +132,35 @@ async function buyProduct(key, amount) {
                         showLockedContent("command");
                     }
                 }).catch(async function() {
-                    await fetch("/api/cuci.js", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentId: id, txid: txid })
-                    });
+                    console.error("DEBUG [buyProduct] Completion failed, cleaning up");
+                    await fetch("/api/cuci.js", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: id, txid: txid }) });
                     updateStatus("Pulih!");
                 });
             },
-            onCancel: function() { updateStatus("Dibatalkan"); },
-            onError: function(e) { updateStatus("Ralat: " + e.message); }
+            onCancel: function() { 
+                console.log("DEBUG [buyProduct] Payment cancelled");
+                updateStatus("Dibatalkan"); 
+            },
+            onError: function(e) { 
+                console.error("DEBUG [buyProduct] Payment error:", e.message);
+                updateStatus("Ralat: " + e.message); 
+            }
         }
     );
 }
 
-// ========== A2U: CLAIM REWARD (TANPA PENGUNCI) ==========
+// ========== A2U: CLAIM REWARD (ASAL) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
         updateStatus("Sila login dahulu.");
+        console.log("DEBUG [requestPayout] No currentUser");
         return; 
     }
+    
+    console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
+    console.log("DEBUG [requestPayout] accessToken exists:", !!currentUser.accessToken);
+    console.log("UID:", currentUser.uid);
     
     updateStatus("Memproses ganjaran...");
     
@@ -151,18 +177,18 @@ async function requestPayout() {
         });
         
         const result = await response.json();
+        console.log("DEBUG [requestPayout] Response:", result);
         
         if (result.success) {
             updateStatus("0.1 Pi dihantar!");
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
             }
-        } else if (result.retryAfter) {
-            updateStatus(`Sila tunggu ${Math.ceil(result.retryAfter / 60000)} minit`);
         } else {
             updateStatus("Gagal: " + (result.error || "Sila cuba lagi."));
         }
     } catch (error) {
+        console.error("DEBUG [requestPayout] Error:", error);
         updateStatus("Rangkaian error. Sila cuba lagi.");
     }
 }
@@ -181,7 +207,11 @@ async function doLogin(isSilent = false) {
             accessToken: auth.accessToken
         };
         
-        localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, timestamp: Date.now() }));
+        const userData = {
+            ...currentUser,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
         
         if (localStorage.getItem('mb-legacy-bought-echelon') === 'true') currentUser.boughtEchelon = true;
         if (localStorage.getItem('mb-legacy-bought-command') === 'true') currentUser.boughtCommand = true;
@@ -190,8 +220,11 @@ async function doLogin(isSilent = false) {
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
         
+        console.log("Sesi Pi Network berjaya diaktifkan semula untuk UID:", currentUser.uid);
+        
     } catch (e) {
         console.error("Autentikasi Pi Gagal:", e);
+        
         if (!isSilent) {
             updateStatus("Login gagal: " + e.message);
         } else {
@@ -207,6 +240,7 @@ async function restoreSession() {
     
     try {
         const userData = JSON.parse(saved);
+        
         currentUser = {
             uid: userData.uid,
             username: userData.username,
@@ -218,11 +252,11 @@ async function restoreSession() {
         document.getElementById("btn-login").style.display = "none";
         tryEnablePaymentButtons();
         
-        console.log("Menyegarkan sesi aktif...");
+        console.log("Menyegarkan sesi aktif dengan pelayan Pi Network...");
         await doLogin(true);
         
     } catch (e) {
-        console.error("Gagal memulihkan sesi:", e);
+        console.error("Gagal memulihkan sesi dari storage:", e);
     }
 }
 
@@ -230,4 +264,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', restoreSession);
 } else {
     restoreSession();
-                                          }
+        }

@@ -1,27 +1,3 @@
-// ========== PEMBOLEH UBAH GLOBAL ==========
-let currentUser = null;
-let pendingIncompleteCount = 0;
-
-function updateStatus(msg) {
-    document.getElementById("stSticky").textContent = msg;
-}
-
-function tryEnablePaymentButtons() {
-    const btn1 = document.getElementById("btn-pay1");
-    const btn10 = document.getElementById("btn-pay10");
-    if (currentUser && pendingIncompleteCount === 0) {
-        if (btn1) btn1.disabled = false;
-        if (btn10) btn10.disabled = false;
-    }
-}
-
-function copySOP() {
-    const sop = document.getElementById("sop-text").textContent;
-    navigator.clipboard.writeText(sop).then(function() {
-        updateStatus("SOP disalin!");
-    });
-}
-
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
     console.log("DEBUG [onIncompletePaymentFound] Payment ID:", payment.identifier);
@@ -75,7 +51,7 @@ async function bersihkanSebelumBayar() {
     }
 }
 
-// ========== U2A: BELI PRODUK (TANPA localStorage) ==========
+// ========== U2A: BELI PRODUK (STABIL – JANGAN UBAH) ==========
 async function buyProduct(key, amount) {
     console.log("DEBUG [buyProduct] Called with key:", key, "amount:", amount);
     if (!currentUser) { 
@@ -84,13 +60,12 @@ async function buyProduct(key, amount) {
         return; 
     }
     
-    // Guna currentUser property, bukan localStorage
-    if (key === "echelon" && currentUser.boughtEchelon) {
+    if (key === "echelon" && localStorage.getItem('mb-legacy-bought-echelon') === 'true') {
         console.log("DEBUG [buyProduct] Echelon already purchased, showing report");
         showEchelonReport();
         return;
     }
-    if (key === "command" && currentUser.boughtCommand) {
+    if (key === "command" && localStorage.getItem('mb-legacy-bought-command') === 'true') {
         console.log("DEBUG [buyProduct] Command already purchased, showing content");
         showLockedContent('command');
         return;
@@ -123,11 +98,13 @@ async function buyProduct(key, amount) {
                     console.log("DEBUG [buyProduct] Payment completed successfully");
                     
                     if (key === "echelon") {
-                        currentUser.boughtEchelon = true;  // ← ganti localStorage
+                        localStorage.setItem('mb-legacy-bought-echelon', 'true');
+                        currentUser.boughtEchelon = true;
                         showEchelonReport();
                     }
                     if (key === "command") {
-                        currentUser.boughtCommand = true;  // ← ganti localStorage
+                        localStorage.setItem('mb-legacy-bought-command', 'true');
+                        currentUser.boughtCommand = true;
                         showLockedContent("command");
                     }
                 }).catch(async function() {
@@ -148,7 +125,7 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (TANPA localStorage) ==========
+// ========== A2U: CLAIM REWARD (BETUL – TIADA Pi.createPayment) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
@@ -191,49 +168,3 @@ async function requestPayout() {
         updateStatus("Rangkaian error. Sila cuba lagi.");
     }
 }
-
-// ========== AUTENTIKASI (TANPA localStorage) ==========
-async function doLogin(isSilent = false) {
-    if (!isSilent) updateStatus("Menyambung...");
-    
-    try {
-        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
-        
-        currentUser = {
-            uid: auth.user.uid,
-            username: auth.user.username,
-            wallet_address: auth.user.wallet_address || "",
-            accessToken: auth.accessToken,
-            boughtEchelon: false,   // ← default
-            boughtCommand: false    // ← default
-        };
-        
-        updateStatus(currentUser.username);
-        document.getElementById("btn-login").style.display = "none";
-        tryEnablePaymentButtons();
-        
-        console.log("Sesi Pi Network berjaya diaktifkan semula untuk UID:", currentUser.uid);
-        
-    } catch (e) {
-        console.error("Autentikasi Pi Gagal:", e);
-        
-        if (!isSilent) {
-            updateStatus("Login gagal: " + e.message);
-        } else {
-            document.getElementById("btn-login").style.display = "block";
-            updateStatus("Sila login semula");
-        }
-    }
-}
-
-async function restoreSession() {
-    // Tiada localStorage — terus minta login
-    document.getElementById("btn-login").style.display = "block";
-    updateStatus("Sila login");
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', restoreSession);
-} else {
-    restoreSession();
-            }

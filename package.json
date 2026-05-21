@@ -11,7 +11,3 @@
     "pi-backend": "^0.1.3",
     "@stellar/stellar-sdk": "^13.2.0"
   },
-  "engines": {
-    "node": "20.x"
-  }
-}

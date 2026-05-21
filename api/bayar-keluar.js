@@ -12,7 +12,7 @@ const paymentStore = new Map();
 // ========== STORAGE PENCEGAHAN TUNTUTAN BERULANG ==========
 // Dalam produksi: GANTI DENGAN PANGKALAN DATA SEBENAR
 const claimStore = new Map();
-const CLAIM_COOLDOWN_MS = 30 * 60 * 1000; // 30 minit
+const CLAIM_COOLDOWN_MS = 5 * 60 * 1000; // 5 minit
 
 export default async function handler(req, res) {
     console.log("\n==================== A2U 6-STEP SOP ====================");
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     // ========== PENCEGAHAN TUNTUTAN BERULANG (ANTI-DRAIN) ==========
     const lastClaim = claimStore.get(uid);
     
-    // 🆕 Auto-padam rekod yang sudah tamat tempoh
+    // Auto-padam rekod yang sudah tamat tempoh
     if (lastClaim && (Date.now() - lastClaim.timestamp) >= CLAIM_COOLDOWN_MS) {
         claimStore.delete(uid);
         console.log(`🔓 Claim record expired & deleted for ${uid}`);

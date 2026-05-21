@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server config error' });
     }
 
-    // ========== LANGKAH 3 (SEMAKAN): Cegah pembayaran berganda ==========
+    // ========== SEMAK PEMBAYARAN TERTUNDA ==========
     console.log("\n--- Checking pending payments ---");
     for (const [id, payment] of paymentStore.entries()) {
         if (payment.uid === uid && payment.status !== 'COMPLETED' && payment.status !== 'CANCELLED') {
@@ -43,7 +43,6 @@ export default async function handler(req, res) {
                     console.log(`Resuming at STEP 6: completePayment for ${id}`);
                     await pi.completePayment(id, payment.txid);
                     paymentStore.set(id, { ...payment, status: 'COMPLETED' });
-                    
                     console.log("Recovery success");
                     return res.status(200).json({ 
                         success: true, paymentId: id, txid: payment.txid, amount: parseFloat(amount), recovered: true 
@@ -59,6 +58,7 @@ export default async function handler(req, res) {
     try {
         // LANGKAH 1: Initialize SDK
         console.log("\n--- STEP 1: Initialize SDK ---");
+        console.log("DEBUG: typeof PiNetwork =", typeof PiNetwork);
         const pi = new PiNetwork(API_KEY, WALLET_SEED);
         console.log("✅ SDK initialized");
 

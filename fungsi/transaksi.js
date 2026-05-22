@@ -1,8 +1,28 @@
-// ========== GLOBAL ==========
+// ========== PEMBOLEH UBAH GLOBAL ==========
 let currentUser = null;
 let pendingIncompleteCount = 0;
 let lastPayoutTime = 0;
-const PAYOUT_COOLDOWN = 300000;
+const PAYOUT_COOLDOWN = 300000; // 5 minit cooldown
+
+function updateStatus(msg) {
+    document.getElementById("stSticky").textContent = msg;
+}
+
+function tryEnablePaymentButtons() {
+    const btn1 = document.getElementById("btn-pay1");
+    const btn10 = document.getElementById("btn-pay10");
+    if (currentUser && pendingIncompleteCount === 0) {
+        if (btn1) btn1.disabled = false;
+        if (btn10) btn10.disabled = false;
+    }
+}
+
+function copySOP() {
+    const sop = document.getElementById("sop-text").textContent;
+    navigator.clipboard.writeText(sop).then(function() {
+        updateStatus("SOP disalin!");
+    });
+}
 
 // ========== PEMBERSIHAN AWAL ==========
 async function onIncompletePaymentFound(payment) {
@@ -131,13 +151,22 @@ async function buyProduct(key, amount) {
     );
 }
 
-// ========== A2U: CLAIM REWARD (BETUL – TIADA Pi.createPayment) ==========
+// ========== A2U: CLAIM REWARD (ASAL + COOLDOWN 5 MINIT) ==========
 async function requestPayout() {
     console.log("DEBUG [requestPayout] Called");
     if (!currentUser) { 
         updateStatus("Sila login dahulu.");
         console.log("DEBUG [requestPayout] No currentUser");
         return; 
+    }
+    
+    // Cooldown 5 minit
+    const now = Date.now();
+    if (now - lastPayoutTime < PAYOUT_COOLDOWN) {
+        const remaining = Math.ceil((PAYOUT_COOLDOWN - (now - lastPayoutTime)) / 60000);
+        updateStatus("Sila tunggu " + remaining + " minit lagi.");
+        console.log("DEBUG [requestPayout] Cooldown active, remaining:", remaining, "min");
+        return;
     }
     
     console.log("DEBUG [requestPayout] currentUser.uid (hash):", currentUser.uid);
@@ -162,6 +191,7 @@ async function requestPayout() {
         console.log("DEBUG [requestPayout] Response:", result);
         
         if (result.success) {
+            lastPayoutTime = Date.now();
             updateStatus("0.1 Pi dihantar!");
             if (typeof showSuccessPopup === 'function') {
                 showSuccessPopup("✅ REWARD RECEIVED!", "0.1 Test-Pi sent to your wallet.", "OK");
@@ -173,4 +203,78 @@ async function requestPayout() {
         console.error("DEBUG [requestPayout] Error:", error);
         updateStatus("Rangkaian error. Sila cuba lagi.");
     }
-                    }
+}
+
+// ========== AUTENTIKASI ==========
+async function doLogin(isSilent = false) {
+    if (!isSilent) updateStatus("Menyambung...");
+    
+    try {
+        const auth = await Pi.authenticate(["username", "payments", "wallet_address"]);
+        
+        currentUser = {
+            uid: auth.user.uid,
+            username: auth.user.username,
+            wallet_address: auth.user.wallet_address || "",
+            accessToken: auth.accessToken
+        };
+        
+        const userData = {
+            ...currentUser,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        if (localStorage.getItem('mb-legacy-bought-echelon') === 'true') currentUser.boughtEchelon = true;
+        if (localStorage.getItem('mb-legacy-bought-command') === 'true') currentUser.boughtCommand = true;
+        
+        updateStatus(currentUser.username);
+        document.getElementById("btn-login").style.display = "none";
+        tryEnablePaymentButtons();
+        
+        console.log("Sesi Pi Network berjaya diaktifkan semula untuk UID:", currentUser.uid);
+        
+    } catch (e) {
+        console.error("Autentikasi Pi Gagal:", e);
+        
+        if (!isSilent) {
+            updateStatus("Login gagal: " + e.message);
+        } else {
+            document.getElementById("btn-login").style.display = "block";
+            updateStatus("Sila login semula");
+        }
+    }
+}
+
+async function restoreSession() {
+    const saved = localStorage.getItem('currentUser');
+    if (!saved) return;
+    
+    try {
+        const userData = JSON.parse(saved);
+        
+        currentUser = {
+            uid: userData.uid,
+            username: userData.username,
+            wallet_address: userData.wallet_address || "",
+            accessToken: userData.accessToken
+        };
+        
+        updateStatus("Welcome back: " + currentUser.username);
+        document.getElementById("btn-login").style.display = "none";
+        tryEnablePaymentButtons();
+        
+        console.log("Menyegarkan sesi aktif dengan pelayan Pi Network...");
+        await doLogin(true);
+        
+    } catch (e) {
+        console.error("Gagal memulihkan sesi dari storage:", e);
+    }
+}
+
+// Pemicu Automatik Apabila Aplikasi Dimuatkan
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restoreSession);
+} else {
+    restoreSession();
+        }
